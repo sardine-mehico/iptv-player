@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">IPTV Player</string>
+    <string name="home_placeholder">Skeleton build. Playlists, live TV, movies and series are next.</string>
+</resources>

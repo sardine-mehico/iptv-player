@@ -1,0 +1,57 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests
+        run: ./gradlew --no-daemon testReleaseUnitTest
+
+      - name: Build release APK
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: Check APK size (hard cap 15 MB)
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          SIZE=$(stat -c%s "$APK")
+          LIMIT=$((15 * 1024 * 1024))
+          MB=$(awk "BEGIN { printf \"%.2f\", $SIZE / 1048576 }")
+          echo "APK: $APK ($MB MB, $SIZE bytes)"
+          echo "### APK size: $MB MB (cap 15 MB)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$SIZE" -ge "$LIMIT" ]; then
+            echo "::error::APK is $MB MB, over the 15 MB cap"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iptv-player-${{ github.run_number }}
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: reports-${{ github.run_number }}
+          path: app/build/reports/
+          if-no-files-found: ignore

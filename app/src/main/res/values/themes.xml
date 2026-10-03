@@ -1,0 +1,9 @@
+<resources>
+    <!-- Framework theme: no AppCompat or Material Components, to keep the APK small. -->
+    <style name="Theme.IptvPlayer" parent="android:Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+</resources>
