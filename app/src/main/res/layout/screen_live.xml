@@ -168,9 +168,9 @@
             android:layout_marginTop="16dp"
             android:orientation="horizontal">
 
-            <TextView android:id="@+id/ctl_prev" style="@style/ControlButton" android:text="@string/ctl_prev" />
-            <TextView android:id="@+id/ctl_pause" style="@style/ControlButton" android:text="@string/ctl_pause" />
-            <TextView android:id="@+id/ctl_next" style="@style/ControlButton" android:text="@string/ctl_next" />
+            <ImageView android:id="@+id/ctl_prev" style="@style/ControlIcon" android:contentDescription="@string/ctl_prev" android:src="@drawable/ic_skip_previous" />
+            <ImageView android:id="@+id/ctl_pause" style="@style/ControlIcon" android:contentDescription="@string/ctl_pause" android:src="@drawable/ic_pause" />
+            <ImageView android:id="@+id/ctl_next" style="@style/ControlIcon" android:contentDescription="@string/ctl_next" android:src="@drawable/ic_skip_next" />
             <TextView android:id="@+id/ctl_audio" style="@style/ControlButton" android:text="@string/ctl_audio" />
             <TextView android:id="@+id/ctl_subs" style="@style/ControlButton" android:text="@string/ctl_subs" />
             <TextView android:id="@+id/ctl_aspect" style="@style/ControlButton" android:text="@string/ctl_aspect_fit" />

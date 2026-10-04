@@ -5,6 +5,7 @@ import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
 import android.widget.ProgressBar
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.C
@@ -51,7 +52,7 @@ class PlayerScreen(
     private val osdStatus: TextView = root.findViewById(R.id.osd_status)
     private val ctlPrev: View = root.findViewById(R.id.ctl_prev)
     private val ctlNext: View = root.findViewById(R.id.ctl_next)
-    private val ctlPause: TextView = root.findViewById(R.id.ctl_pause)
+    private val ctlPause: ImageView = root.findViewById(R.id.ctl_pause)
     private val ctlAspect: TextView = root.findViewById(R.id.ctl_aspect)
 
     private var index = start.coerceIn(0, items.lastIndex)
@@ -203,7 +204,9 @@ class PlayerScreen(
     }
 
     private fun updatePauseLabel() {
-        ctlPause.setText(if (graph.player.isPaused) R.string.ctl_play else R.string.ctl_pause)
+        val paused = graph.player.isPaused
+        ctlPause.setImageResource(if (paused) R.drawable.ic_play else R.drawable.ic_pause)
+        ctlPause.contentDescription = activity.getString(if (paused) R.string.ctl_play else R.string.ctl_pause)
     }
 
     private fun chooseTrack(type: Int) {

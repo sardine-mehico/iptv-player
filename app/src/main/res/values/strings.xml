@@ -41,8 +41,8 @@
     <string name="favourite_added">Added to favourites</string>
     <string name="favourite_removed">Removed from favourites</string>
 
-    <string name="ctl_prev">‹ Prev</string>
-    <string name="ctl_next">Next ›</string>
+    <string name="ctl_prev">Previous channel</string>
+    <string name="ctl_next">Next channel</string>
     <string name="ctl_pause">Pause</string>
     <string name="ctl_play">Play</string>
     <string name="ctl_audio">Audio</string>
@@ -70,4 +70,9 @@
     <string name="resume_at">Resume %1$s</string>
     <string name="resume_episode">Resume %1$s · %2$s</string>
     <string name="from_start">From start</string>
+
+    <string name="auto_start_on">Auto-start on boot: On</string>
+    <string name="auto_start_off">Auto-start on boot: Off</string>
+    <string name="auto_start_permission">Allow “display over other apps” so the app can open at boot</string>
+    <string name="auto_start_no_settings">Auto-start is on, but this box may block it: allow “display over other apps” for IPTV Player in system settings</string>
 </resources>

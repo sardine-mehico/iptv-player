@@ -6,6 +6,7 @@ import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.media3.common.C
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -47,7 +48,7 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
     private val bannerInfo: TextView = root.findViewById(R.id.banner_info)
     private val osdStatus: TextView = root.findViewById(R.id.osd_status)
     private val controls: View = root.findViewById(R.id.controls)
-    private val ctlPause: TextView = root.findViewById(R.id.ctl_pause)
+    private val ctlPause: ImageView = root.findViewById(R.id.ctl_pause)
     private val ctlAspect: TextView = root.findViewById(R.id.ctl_aspect)
     private val ctlFav: TextView = root.findViewById(R.id.ctl_fav)
     private val searchField: EditText = root.findViewById(R.id.search)
@@ -417,7 +418,9 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
     }
 
     private fun updatePauseLabel() {
-        ctlPause.setText(if (graph.player.isPaused) R.string.ctl_play else R.string.ctl_pause)
+        val paused = graph.player.isPaused
+        ctlPause.setImageResource(if (paused) R.drawable.ic_play else R.drawable.ic_pause)
+        ctlPause.contentDescription = activity.getString(if (paused) R.string.ctl_play else R.string.ctl_pause)
     }
 
     private fun updateFavLabel() {

@@ -1,6 +1,11 @@
 package io.github.sardinemehico.iptvplayer.ui
 
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.graphics.Rect
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -14,7 +19,7 @@ import io.github.sardinemehico.iptvplayer.data.repo.Playlist
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-/** Saved playlists: open one, refresh it, delete it, or add another. */
+/** Settings: auto-start on boot, and the saved playlists (open, refresh, details, delete, add). */
 class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
 
     override val root: View = inflater.inflate(R.layout.screen_playlists, null)
@@ -22,10 +27,34 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
     private val add: TextView = root.findViewById(R.id.add)
     private val message: TextView = root.findViewById(R.id.message)
     private val busyDots: View = root.findViewById(R.id.busy)
+    private val autoStart: TextView = root.findViewById(R.id.auto_start)
     private var busy = false
 
     init {
         add.setOnClickListener { activity.push(AddPlaylistScreen(activity)) }
+        autoStart.setOnClickListener { toggleAutoStart() }
+        updateAutoStart()
+    }
+
+    private fun updateAutoStart() {
+        autoStart.setText(if (graph.prefs.autoStart) R.string.auto_start_on else R.string.auto_start_off)
+    }
+
+    private fun toggleAutoStart() {
+        val on = !graph.prefs.autoStart
+        graph.prefs.autoStart = on
+        updateAutoStart()
+        // Android 10+ blocks opening at boot unless the app may draw over other apps.
+        if (on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !Settings.canDrawOverlays(activity)) {
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + activity.packageName))
+            try {
+                activity.toast(activity.getString(R.string.auto_start_permission))
+                activity.startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+                // Many TV builds have no such settings page.
+                activity.toast(activity.getString(R.string.auto_start_no_settings))
+            }
+        }
     }
 
     override fun onShown() {

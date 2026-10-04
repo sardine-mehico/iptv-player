@@ -4,10 +4,19 @@
     android:layout_height="match_parent"
     android:background="@color/background">
 
-    <LinearLayout
+    <!-- Scrolls when there are many playlists. -->
+    <ScrollView
         android:layout_width="560dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:paddingTop="24dp"
+        android:paddingBottom="24dp"
+        android:clipToPadding="false"
+        android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
 
         <TextView
@@ -15,6 +24,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/settings" />
+
+        <TextView
+            android:id="@+id/auto_start"
+            style="@style/TileButton"
+            android:layout_width="match_parent"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical|start"
+            android:text="@string/auto_start_off" />
 
         <TextView
             style="@style/Text.Body"
@@ -69,4 +86,5 @@
                 android:layout_weight="1" />
         </LinearLayout>
     </LinearLayout>
+    </ScrollView>
 </FrameLayout>

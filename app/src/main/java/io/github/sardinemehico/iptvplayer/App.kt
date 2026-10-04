@@ -90,6 +90,11 @@ class Prefs(private val sp: SharedPreferences) {
         get() = sp.getString("last_live_item", null)
         set(v) = sp.edit().putString("last_live_item", v).apply()
 
+    /** Open the app when the box boots. */
+    var autoStart: Boolean
+        get() = sp.getBoolean("auto_start", false)
+        set(v) = sp.edit().putBoolean("auto_start", v).apply()
+
     /** PlayerView resize mode (AspectRatioFrameLayout.RESIZE_MODE_*), 0 = fit. */
     var resizeMode: Int
         get() = sp.getInt("resize_mode", 0)

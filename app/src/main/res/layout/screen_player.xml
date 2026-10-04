@@ -87,7 +87,7 @@
 
             <TextView android:id="@+id/ctl_prev" style="@style/ControlButton" android:text="@string/ctl_prev_ep" />
             <TextView android:id="@+id/ctl_back" style="@style/ControlButton" android:text="@string/ctl_rewind" />
-            <TextView android:id="@+id/ctl_pause" style="@style/ControlButton" android:text="@string/ctl_pause" />
+            <ImageView android:id="@+id/ctl_pause" style="@style/ControlIcon" android:contentDescription="@string/ctl_pause" android:src="@drawable/ic_pause" />
             <TextView android:id="@+id/ctl_fwd" style="@style/ControlButton" android:text="@string/ctl_forward" />
             <TextView android:id="@+id/ctl_next" style="@style/ControlButton" android:text="@string/ctl_next_ep" />
             <TextView android:id="@+id/ctl_audio" style="@style/ControlButton" android:text="@string/ctl_audio" />
