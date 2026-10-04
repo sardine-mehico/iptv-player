@@ -100,17 +100,4 @@
         <item name="android:textSize">17sp</item>
         <item name="android:maxLines">2</item>
     </style>
-
-    <!-- App Settings section header: small, spaced capitals. -->
-    <style name="Text.Section" parent="">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">26dp</item>
-        <item name="android:paddingStart">4dp</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.08</item>
-        <item name="android:textColor">@color/text_secondary</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:textStyle">bold</item>
-    </style>
 </resources>

@@ -3,14 +3,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- App Settings, in sections. Scrolls on short screens and with many playlists. -->
+    <!-- Scrolls when there are many playlists. -->
     <ScrollView
-        android:layout_width="760dp"
+        android:layout_width="560dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:paddingTop="24dp"
+        android:paddingBottom="24dp"
         android:clipToPadding="false"
-        android:paddingTop="28dp"
-        android:paddingBottom="28dp"
         android:scrollbars="none">
 
     <LinearLayout
@@ -25,28 +25,53 @@
             android:text="@string/settings" />
 
         <TextView
+            android:id="@+id/auto_start"
+            style="@style/TileButton"
+            android:layout_width="match_parent"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical|start"
+            android:text="@string/auto_start_off" />
+
+        <TextView
+            android:id="@+id/auto_start_status"
             style="@style/Text.Secondary"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="@string/settings_hint"
-            android:textSize="14sp" />
+            android:layout_marginTop="6dp"
+            android:textSize="14sp"
+            android:visibility="gone" />
 
-        <TextView style="@style/Text.Section" android:text="@string/section_home" />
-        <include android:id="@+id/default_home" layout="@layout/row_setting" />
-        <include android:id="@+id/slot_count" layout="@layout/row_setting" />
+        <!-- How many app slots the home screen shows: Left/Right (or OK) changes it. -->
+        <TextView
+            android:id="@+id/slot_count"
+            style="@style/TileButton"
+            android:layout_width="match_parent"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical|start" />
 
-        <TextView style="@style/Text.Section" android:text="@string/section_startup" />
-        <include android:id="@+id/auto_start" layout="@layout/row_setting" />
+        <!-- Which DNS WorldTV's own connections use. OK cycles through the options. -->
+        <TextView
+            android:id="@+id/dns"
+            style="@style/TileButton"
+            android:layout_width="match_parent"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical|start"
+            android:text="@string/dns_system" />
 
-        <TextView style="@style/Text.Section" android:text="@string/section_network" />
-        <include android:id="@+id/dns" layout="@layout/row_setting" />
+        <!-- Make WorldTV the box's Home screen (default launcher). Shows "already" once it is. -->
+        <TextView
+            android:id="@+id/default_home"
+            style="@style/TileButton"
+            android:layout_width="match_parent"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical|start"
+            android:text="@string/home_make_default" />
 
-        <TextView style="@style/Text.Section" android:text="@string/section_shortcuts" />
+        <!-- Way out to other apps and the box's own settings: needed when WorldTV is the launcher. -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
             android:orientation="horizontal">
 
             <TextView
@@ -65,28 +90,33 @@
                 android:text="@string/android_settings" />
         </LinearLayout>
 
-        <TextView style="@style/Text.Section" android:text="@string/playlists" />
+        <TextView
+            style="@style/Text.Body"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/playlists"
+            android:textStyle="bold" />
+
         <TextView
             style="@style/Text.Secondary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:paddingStart="4dp"
-            android:text="@string/playlists_hint"
-            android:textSize="14sp" />
+            android:text="OK to open · Menu or long-press for refresh and delete" />
 
         <LinearLayout
             android:id="@+id/list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="16dp"
             android:orientation="vertical" />
 
         <TextView
             android:id="@+id/add"
             style="@style/TileButton"
             android:layout_width="match_parent"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="16dp"
             android:text="@string/add_playlist" />
 
         <LinearLayout
