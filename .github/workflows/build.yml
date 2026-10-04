@@ -1,9 +1,8 @@
 name: Build
 
+# Manual only: APKs are built locally and attached to GitHub Releases, to save Actions minutes.
+# Run it from the Actions tab ("Run workflow") when a clean-room build is wanted.
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 
 concurrency:

@@ -3,21 +3,23 @@
 A lightweight IPTV player for low-spec Android TV boxes (1 GB RAM, ~1 GHz), modelled on IBO Player Pro.
 Users bring their own M3U URL or Xtream Codes login. The app ships no channels, playlists or provider links.
 
-**Status:** early skeleton. The playlist parsers (M3U, Xtream) are in place with unit tests; screens come next.
+**Status:** early test builds: Live TV, Movies, Series, search, Continue watching, playlist PIN, auto-start on boot.
 
 - MVP document: https://claude.ai/code/artifact/f7b3b895-aef4-4a3d-9555-9848fd1bd09e
 - Rules for contributors (and Claude Code): [CLAUDE.md](CLAUDE.md)
 
 ## Get a test APK
 
-Every push to `main` builds a release APK in GitHub Actions.
+Each version's APK is built locally and attached to a **GitHub Release** (tag = version, e.g. `0.1.4`).
 
-1. Open the **Actions** tab, pick the latest green **Build** run.
-2. Download the `iptv-player-<run>` artifact (a zip containing the APK).
-3. Sideload it onto the box (e.g. with `adb install -r app-release.apk`, or a USB stick and a file manager).
+1. Open **Releases** on the repo page and pick the newest one.
+2. Download `iptv-player-<version>.apk`.
+3. Sideload it onto the box (e.g. with `adb install -r iptv-player-<version>.apk`, or a USB stick and a file manager).
+
+The **Build** workflow in GitHub Actions no longer runs on every push; start it by hand from the Actions tab if needed.
 
 Builds are signed with a **test key** committed in `keystore/` so they install over each other.
-Do not publish an APK signed with that key.
+Do not publish an APK signed with that key outside test use.
 
 ## Build locally
 

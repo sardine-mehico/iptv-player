@@ -95,6 +95,16 @@ class Prefs(private val sp: SharedPreferences) {
         get() = sp.getBoolean("auto_start", false)
         set(v) = sp.edit().putBoolean("auto_start", v).apply()
 
+    /** When the boot broadcast last reached the app (ms), 0 = never. Shown in Settings. */
+    var lastBootAt: Long
+        get() = sp.getLong("last_boot_at", 0)
+        set(v) = sp.edit().putLong("last_boot_at", v).apply()
+
+    /** Whether the app had the permission Android 10+ needs to open itself at that boot. */
+    var lastBootAllowed: Boolean
+        get() = sp.getBoolean("last_boot_allowed", false)
+        set(v) = sp.edit().putBoolean("last_boot_allowed", v).apply()
+
     /** PlayerView resize mode (AspectRatioFrameLayout.RESIZE_MODE_*), 0 = fit. */
     var resizeMode: Int
         get() = sp.getInt("resize_mode", 0)

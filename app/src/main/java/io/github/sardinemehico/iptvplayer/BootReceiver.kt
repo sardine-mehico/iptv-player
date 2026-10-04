@@ -3,6 +3,8 @@ package io.github.sardinemehico.iptvplayer
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 
 /**
  * Opens the app after the box boots, if "Auto-start on boot" is on in Settings.
@@ -13,7 +15,12 @@ class BootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action !in BOOT_ACTIONS) return
-        if (!App.graph.prefs.autoStart) return
+        val prefs = App.graph.prefs
+        if (!prefs.autoStart) return
+        // Recorded so Settings can say whether the boot signal arrived and whether Android allowed the launch.
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Settings.canDrawOverlays(context)
+        prefs.lastBootAt = System.currentTimeMillis()
+        prefs.lastBootAllowed = allowed
         val launch = Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
         try {

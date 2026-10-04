@@ -28,6 +28,7 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
     private val message: TextView = root.findViewById(R.id.message)
     private val busyDots: View = root.findViewById(R.id.busy)
     private val autoStart: TextView = root.findViewById(R.id.auto_start)
+    private val autoStartStatus: TextView = root.findViewById(R.id.auto_start_status)
     private var busy = false
 
     init {
@@ -36,16 +37,37 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
         updateAutoStart()
     }
 
+    private fun canLaunchAtBoot() = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Settings.canDrawOverlays(activity)
+
+    /** Toggle text, plus what happened at the last boot and what's still missing. */
     private fun updateAutoStart() {
-        autoStart.setText(if (graph.prefs.autoStart) R.string.auto_start_on else R.string.auto_start_off)
+        val prefs = graph.prefs
+        autoStart.setText(if (prefs.autoStart) R.string.auto_start_on else R.string.auto_start_off)
+        if (!prefs.autoStart) {
+            autoStartStatus.visibility = View.GONE
+            return
+        }
+        val lines = ArrayList<String>()
+        if (!canLaunchAtBoot()) lines += activity.getString(R.string.auto_start_blocked, activity.packageName)
+        val at = prefs.lastBootAt
+        lines += if (at == 0L) {
+            activity.getString(R.string.auto_start_never)
+        } else {
+            val time = java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(java.util.Date(at))
+            activity.getString(if (prefs.lastBootAllowed) R.string.auto_start_last_boot else R.string.auto_start_last_boot_blocked, time)
+        }
+        autoStartStatus.text = lines.joinToString("\n\n")
+        autoStartStatus.visibility = View.VISIBLE
     }
 
     private fun toggleAutoStart() {
-        val on = !graph.prefs.autoStart
-        graph.prefs.autoStart = on
+        val prefs = graph.prefs
+        // Already on but still blocked: OK reopens the permission page instead of switching off.
+        val on = if (prefs.autoStart && !canLaunchAtBoot()) true else !prefs.autoStart
+        prefs.autoStart = on
         updateAutoStart()
         // Android 10+ blocks opening at boot unless the app may draw over other apps.
-        if (on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !Settings.canDrawOverlays(activity)) {
+        if (on && !canLaunchAtBoot()) {
             val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + activity.packageName))
             try {
                 activity.toast(activity.getString(R.string.auto_start_permission))
@@ -59,6 +81,7 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
 
     override fun onShown() {
         activity.setVideoRect(Rect(0, 0, 1, 1))
+        updateAutoStart() // the permission may have been granted in system settings meanwhile
         graph.player.stop()
         reload()
     }

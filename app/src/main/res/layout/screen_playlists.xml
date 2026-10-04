@@ -34,6 +34,15 @@
             android:text="@string/auto_start_off" />
 
         <TextView
+            android:id="@+id/auto_start_status"
+            style="@style/Text.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
             style="@style/Text.Body"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

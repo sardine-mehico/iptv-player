@@ -31,5 +31,8 @@ MVP document: https://claude.ai/code/artifact/f7b3b895-aef4-4a3d-9555-9848fd1bd0
 
 ## Build and test
 - `./gradlew testReleaseUnitTest assembleRelease`
-- CI: `.github/workflows/build.yml` runs tests, builds the release APK, enforces the size cap, uploads the APK.
+- Releases: bump `versionCode`/`versionName`, build locally, push, then create a GitHub Release (tag = version,
+  pre-release) with `iptv-player-<version>.apk` attached.
+- CI: `.github/workflows/build.yml` is manual-only (`workflow_dispatch`) to save Actions minutes. It runs tests,
+  builds the release APK, enforces the size cap, uploads the APK.
 - Release builds use the committed **test** keystore (`keystore/test-release.jks`). Never ship that key.

@@ -76,4 +76,9 @@
     <string name="auto_start_permission">Allow “display over other apps” so the app can open at boot</string>
     <string name="auto_start_no_settings">Auto-start is on, but this box may block it: allow “display over other apps” for IPTV Player in system settings</string>
     <string name="version_label">Version %1$s</string>
+
+    <string name="auto_start_blocked">Android is blocking start-up launch: allow “display over other apps” for IPTV Player (press OK above to open that setting). If your box has no such setting, connect from a computer and run:\nadb shell appops set %1$s SYSTEM_ALERT_WINDOW allow</string>
+    <string name="auto_start_last_boot">Last start-up: the box notified the app at %1$s</string>
+    <string name="auto_start_last_boot_blocked">Last start-up: the box notified the app at %1$s, but the launch was blocked (permission missing)</string>
+    <string name="auto_start_never">The box has not notified the app of a start-up yet. Restart the box to test.</string>
 </resources>
