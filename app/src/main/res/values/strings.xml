@@ -114,4 +114,20 @@
 
     <string name="slot_count">Home screen app slots: ‹ %1$d ›   (Left / Right to change)</string>
     <string name="choose_launcher">Open a launcher</string>
+
+    <string name="update_auto_on">Check for updates on start: On</string>
+    <string name="update_auto_off">Check for updates on start: Off</string>
+    <string name="update_check_now">Check now</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_check_failed">Couldn\'t check for updates. Try again later.</string>
+    <string name="update_none">WorldTV is up to date (%1$s)</string>
+    <string name="update_title">WorldTV %1$s is available</string>
+    <string name="update_message">You have %1$s. Update to %2$s now? Your playlists and settings are kept.</string>
+    <string name="update_yes">Update</string>
+    <string name="update_later">Not now</string>
+    <string name="update_skip">Skip this version</string>
+    <string name="update_skipped">Version %1$s skipped. \"Check now\" in App Settings still finds it.</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_allow_install">Allow WorldTV to install apps, then press Back: the update continues.</string>
+    <string name="update_failed">Update failed: %1$s</string>
 </resources>

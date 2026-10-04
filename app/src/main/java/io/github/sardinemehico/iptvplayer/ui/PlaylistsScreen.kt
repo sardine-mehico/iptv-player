@@ -56,6 +56,11 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
             }
         }
         showSlotCount()
+        val autoUpdate = root.findViewById<TextView>(R.id.auto_update)
+        fun showAutoUpdate() = autoUpdate.setText(if (graph.prefs.autoUpdate) R.string.update_auto_on else R.string.update_auto_off)
+        autoUpdate.setOnClickListener { graph.prefs.autoUpdate = !graph.prefs.autoUpdate; showAutoUpdate() }
+        showAutoUpdate()
+        root.findViewById<View>(R.id.check_update).setOnClickListener { AppUpdates.checkNow(activity, scope) }
         val dns = root.findViewById<TextView>(R.id.dns)
         fun showDns() = dns.setText(
             when (graph.prefs.dnsMode) {

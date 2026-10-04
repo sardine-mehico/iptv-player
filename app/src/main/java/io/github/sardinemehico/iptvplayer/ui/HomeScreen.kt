@@ -8,6 +8,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Space
 import android.widget.TextView
+import androidx.lifecycle.lifecycleScope
 import io.github.sardinemehico.iptvplayer.MainActivity
 import io.github.sardinemehico.iptvplayer.R
 import io.github.sardinemehico.iptvplayer.data.model.ContentType
@@ -61,9 +62,16 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
         (lastFocusTag?.let { root.findViewWithTag<View>(it) } ?: live).requestFocus()
         scope.launch { showAccount() }
         scope.launch { showSlots() } // an app may have been installed or removed meanwhile
+        shown = true
+        // Update check: once per start, in the background, offered only on the home screen.
+        AppUpdates.offerPending(activity, scope)
+        AppUpdates.checkOnStart(activity, activity.lifecycleScope) { if (shown) AppUpdates.offerPending(activity, scope) }
     }
 
+    private var shown = false
+
     override fun onHidden() {
+        shown = false
         val focused = activity.currentFocus
         if (focused != null && focused.tag is String && isInside(focused)) lastFocusTag = focused.tag as String
     }

@@ -97,7 +97,8 @@ class AppGraph(private val app: Application) {
 class Prefs(private val sp: SharedPreferences) {
 
     companion object {
-        const val MIN_SLOTS = 2
+        const val MIN_SLOTS = 1
+        const val DEFAULT_SLOTS = 2
         const val MAX_SLOTS = 14
     }
     var activePlaylist: Long
@@ -128,18 +129,34 @@ class Prefs(private val sp: SharedPreferences) {
         set(v) = sp.edit().putBoolean("last_boot_allowed", v).apply()
 
     /**
-     * How many app slots the home screen shows (2..14; 5 fit in the second row, the rest go to
-     * a third). New installs get 2. An update from a version without this setting keeps every
-     * slot that already holds an app (up to 5), so nobody's apps disappear.
+     * How many app slots the home screen shows (1..14, rows of 5). New installs get 2. An update
+     * from a version without this setting keeps every slot that already holds an app (up to 5),
+     * so nobody's apps disappear.
      */
     var appSlotCount: Int
         get() {
             val stored = sp.getInt("app_slot_count", -1)
             if (stored != -1) return stored.coerceIn(MIN_SLOTS, MAX_SLOTS)
-            val highestUsed = (0 until 5).lastOrNull { appSlot(it) != null } ?: -1
-            return (highestUsed + 1).coerceIn(MIN_SLOTS, 5).also { appSlotCount = it }
+            val highestUsed = (0 until 5).lastOrNull { appSlot(it) != null }
+            val n = if (highestUsed == null) DEFAULT_SLOTS else (highestUsed + 1).coerceIn(DEFAULT_SLOTS, 5)
+            return n.also { appSlotCount = it }
         }
         set(v) = sp.edit().putInt("app_slot_count", v.coerceIn(MIN_SLOTS, MAX_SLOTS)).apply()
+
+    /** Check GitHub for a newer WorldTV when the app starts (App Settings). */
+    var autoUpdate: Boolean
+        get() = sp.getBoolean("auto_update", true)
+        set(v) = sp.edit().putBoolean("auto_update", v).apply()
+
+    /** When the last update check ran (ms), to check at most every few hours. */
+    var lastUpdateCheck: Long
+        get() = sp.getLong("last_update_check", 0)
+        set(v) = sp.edit().putLong("last_update_check", v).apply()
+
+    /** A version the user chose to skip; it is not offered again. */
+    var skippedUpdate: String?
+        get() = sp.getString("skipped_update", null)
+        set(v) = sp.edit().putString("skipped_update", v).apply()
 
     /** Package shown in home-screen app slot [index] (0..13), or null if the slot is empty. */
     fun appSlot(index: Int): String? = sp.getString("app_slot_$index", null)
