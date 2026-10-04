@@ -6,9 +6,10 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import coil3.dispose
 import coil3.load
 import coil3.request.error
-import coil3.request.fallback
+import coil3.request.placeholder
 import io.github.sardinemehico.iptvplayer.R
 import io.github.sardinemehico.iptvplayer.data.repo.CategoryRow
 import io.github.sardinemehico.iptvplayer.data.repo.EntryRow
@@ -143,24 +144,35 @@ class PagedEntryAdapter(
         if (row == null) {
             holder.name.text = ""
             holder.fav?.visibility = View.GONE
-            holder.logo.load(null)
+            showLogo(holder, null)
             holder.itemView.isActivated = false
             request(position / PAGE)
             return
         }
         holder.name.text = row.name
         holder.fav?.visibility = if (row.favourite) View.VISIBLE else View.GONE
-        if (layout == R.layout.row_channel) {
-            // Channels without a logo, or whose logo link is broken, get a muted stand-in so
-            // every row looks the same.
-            holder.logo.load(row.logo) {
-                fallback(R.drawable.ic_channel_placeholder)
-                error(R.drawable.ic_channel_placeholder)
-            }
-        } else {
-            holder.logo.load(row.logo)
-        }
+        showLogo(holder, row.logo)
         holder.itemView.isActivated = row.itemId == playingItemId
+    }
+
+    /**
+     * Channel rows always show something at once: the muted stand-in is set directly (no image
+     * pipeline) when there is no logo, and shown while a logo downloads or if its link is broken.
+     */
+    private fun showLogo(holder: VH, url: String?) {
+        if (layout != R.layout.row_channel) {
+            holder.logo.load(url)
+            return
+        }
+        if (url.isNullOrBlank()) {
+            holder.logo.dispose() // a recycled row may still be loading another channel's logo
+            holder.logo.setImageResource(R.drawable.ic_channel_placeholder)
+            return
+        }
+        holder.logo.load(url) {
+            placeholder(R.drawable.ic_channel_placeholder)
+            error(R.drawable.ic_channel_placeholder)
+        }
     }
 
     private fun request(page: Int) {
