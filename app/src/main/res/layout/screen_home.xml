@@ -21,6 +21,32 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp" />
 
+    <!-- Reload progress: shown only while a reload runs, and for its result. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical"
+        android:minHeight="24dp"
+        android:orientation="horizontal">
+
+        <io.github.sardinemehico.iptvplayer.ui.LoadingDots
+            android:id="@+id/busy"
+            android:layout_width="40dp"
+            android:layout_height="10dp"
+            android:layout_marginEnd="12dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/reload_status"
+            style="@style/Text.Secondary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:ellipsize="end" />
+    </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -48,12 +74,27 @@
             android:drawableTop="@drawable/ic_series"
             android:text="@string/series" />
 
-        <TextView
-            android:id="@+id/tile_settings"
-            style="@style/HomeTile"
+        <!-- Smaller column: Settings and Reload playlist, together as tall as one big tile. -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="180dp"
             android:layout_marginStart="20dp"
-            android:drawableTop="@drawable/ic_settings"
-            android:text="@string/settings" />
+            android:layout_weight="0.8"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tile_settings"
+                style="@style/HomeSmallTile"
+                android:drawableStart="@drawable/ic_settings_small"
+                android:text="@string/settings" />
+
+            <TextView
+                android:id="@+id/tile_reload"
+                style="@style/HomeSmallTile"
+                android:layout_marginTop="12dp"
+                android:drawableStart="@drawable/ic_refresh"
+                android:text="@string/reload_playlist" />
+        </LinearLayout>
     </LinearLayout>
 
     <TextView

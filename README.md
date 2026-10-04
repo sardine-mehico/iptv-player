@@ -1,4 +1,4 @@
-# IPTV Player
+# WorldTV
 
 A lightweight IPTV player for low-spec Android TV boxes (1 GB RAM, ~1 GHz), modelled on IBO Player Pro.
 Users bring their own M3U URL or Xtream Codes login. The app ships no channels, playlists or provider links.
@@ -13,8 +13,8 @@ Users bring their own M3U URL or Xtream Codes login. The app ships no channels, 
 Each version's APK is built locally and attached to a **GitHub Release** (tag = version, e.g. `0.1.4`).
 
 1. Open **Releases** on the repo page and pick the newest one.
-2. Download `iptv-player-<version>.apk`.
-3. Sideload it onto the box (e.g. with `adb install -r iptv-player-<version>.apk`, or a USB stick and a file manager).
+2. Download `worldtv-<version>.apk`.
+3. Sideload it onto the box (e.g. with `adb install -r worldtv-<version>.apk`, or a USB stick and a file manager).
 
 The **Build** workflow in GitHub Actions no longer runs on every push; start it by hand from the Actions tab if needed.
 
