@@ -76,6 +76,13 @@
                 android:minWidth="140dp"
                 android:text="@string/play" />
 
+            <!-- Shown when there is a saved position. -->
+            <TextView
+                android:id="@+id/from_start"
+                style="@style/ControlButton"
+                android:text="@string/from_start"
+                android:visibility="gone" />
+
             <TextView
                 android:id="@+id/favourite"
                 style="@style/ControlButton"

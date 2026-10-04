@@ -47,6 +47,9 @@ data class EntryRow(
     val favourite: Boolean,
 )
 
+/** Saved playback point. [episodeId] is set for series. */
+data class Progress(val episodeId: String?, val positionMs: Long, val durationMs: Long)
+
 /** The stored fields a movie or series page shows before (or without) the panel's info call. */
 data class EntryDetails(val rating: String?, val plot: String?, val ext: String?)
 
@@ -105,6 +108,7 @@ class Repository(private val db: Db, private val io: CoroutineDispatcher) {
             w.delete("entry", "playlist_id = ?", args)
             w.delete("category", "playlist_id = ?", args)
             w.delete("favourite", "playlist_id = ?", args)
+            w.delete("progress", "playlist_id = ?", args)
             w.delete("playlist", "id = ?", args)
             w.setTransactionSuccessful()
         } finally {
@@ -133,9 +137,13 @@ class Repository(private val db: Db, private val io: CoroutineDispatcher) {
 
     // ---- browsing ----
 
-    /** Categories of one library, with the virtual "All" and "Favourites" entries first. */
+    /**
+     * Categories of one library, with the virtual "All" and "Favourites" entries first
+     * (and "Continue watching" for movies and series).
+     */
     suspend fun categories(playlistId: Long, type: ContentType): List<CategoryRow> = withContext(io) {
         val out = arrayListOf(CategoryRow(KEY_ALL, "All"), CategoryRow(KEY_FAV, "Favourites"))
+        if (type != ContentType.LIVE) out += CategoryRow(KEY_CONTINUE, "Continue watching")
         db.readableDatabase.rawQuery(
             "SELECT cat_id, name FROM category WHERE playlist_id = ? AND type = ? ORDER BY sort",
             arrayOf(playlistId.toString(), type.ordinal.toString()),
@@ -159,7 +167,7 @@ class Repository(private val db: Db, private val io: CoroutineDispatcher) {
                 """SELECT e.item_id, e.name, e.logo, e.stream_url, e.ext, e.catchup_days,
                    EXISTS(SELECT 1 FROM favourite f WHERE f.playlist_id = e.playlist_id
                           AND f.type = e.type AND f.item_id = e.item_id)
-                   FROM entry e $where ORDER BY e.sort LIMIT $limit OFFSET $offset""",
+                   FROM entry e $where ORDER BY ${order(key)} LIMIT $limit OFFSET $offset""",
                 args,
             ).use { c ->
                 val out = ArrayList<EntryRow>(c.count)
@@ -205,6 +213,49 @@ class Repository(private val db: Db, private val io: CoroutineDispatcher) {
         ).use { it.moveToFirst() }
     }
 
+    // ---- continue watching ----
+
+    suspend fun progress(playlistId: Long, type: ContentType, itemId: String): Progress? = withContext(io) {
+        db.readableDatabase.rawQuery(
+            "SELECT episode_id, position_ms, duration_ms FROM progress WHERE playlist_id = ? AND type = ? AND item_id = ?",
+            arrayOf(playlistId.toString(), type.ordinal.toString(), itemId),
+        ).use { c -> if (c.moveToFirst()) Progress(c.getStringOrNull(0), c.getLong(1), c.getLong(2)) else null }
+    }
+
+    /**
+     * Records where playback stopped. Too early to matter (under [MIN_RESUME_MS]) or nearly
+     * finished (last [END_PERCENT]%) clears it instead, so finished titles leave the list.
+     */
+    suspend fun saveProgress(
+        playlistId: Long,
+        type: ContentType,
+        itemId: String,
+        episodeId: String?,
+        positionMs: Long,
+        durationMs: Long,
+    ) = withContext(io) {
+        val w = db.writableDatabase
+        val nearEnd = durationMs > 0 && positionMs >= durationMs * END_PERCENT / 100
+        if (positionMs < MIN_RESUME_MS || nearEnd) {
+            // An early stop in a *different* episode shouldn't wipe the series' saved point.
+            val where = if (episodeId == null) "" else " AND (episode_id = ? OR ? = 1)"
+            val args = arrayListOf(playlistId.toString(), type.ordinal.toString(), itemId)
+            if (episodeId != null) { args += episodeId; args += if (nearEnd) "1" else "0" }
+            w.delete("progress", "playlist_id = ? AND type = ? AND item_id = ?$where", args.toTypedArray())
+            return@withContext
+        }
+        val v = ContentValues().apply {
+            put("playlist_id", playlistId)
+            put("type", type.ordinal)
+            put("item_id", itemId)
+            put("episode_id", episodeId)
+            put("position_ms", positionMs)
+            put("duration_ms", durationMs)
+            put("updated", System.currentTimeMillis())
+        }
+        w.insertWithOnConflict("progress", null, v, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+    }
+
     /** Toggles a favourite and returns the new state. */
     suspend fun toggleFavourite(playlistId: Long, type: ContentType, itemId: String): Boolean = withContext(io) {
         val w = db.writableDatabase
@@ -229,9 +280,26 @@ class Repository(private val db: Db, private val io: CoroutineDispatcher) {
             KEY_ALL -> "WHERE e.playlist_id = ? AND e.type = ?" to base
             KEY_FAV -> ("WHERE e.playlist_id = ? AND e.type = ? AND EXISTS(SELECT 1 FROM favourite f " +
                 "WHERE f.playlist_id = e.playlist_id AND f.type = e.type AND f.item_id = e.item_id)") to base
-            else -> "WHERE e.playlist_id = ? AND e.type = ? AND e.category_id = ?" to (base + key)
+            KEY_CONTINUE -> ("WHERE e.playlist_id = ? AND e.type = ? AND EXISTS(SELECT 1 FROM progress p " +
+                "WHERE p.playlist_id = e.playlist_id AND p.type = e.type AND p.item_id = e.item_id)") to base
+            else -> if (key.startsWith(SEARCH_PREFIX)) {
+                // Substring match on the name. A scan of one library: fine on the IO thread even for 50k rows.
+                "WHERE e.playlist_id = ? AND e.type = ? AND e.name LIKE ? ESCAPE '\\'" to
+                    (base + ("%" + likeEscape(key.removePrefix(SEARCH_PREFIX)) + "%"))
+            } else {
+                "WHERE e.playlist_id = ? AND e.type = ? AND e.category_id = ?" to (base + key)
+            }
         }
     }
+
+    private fun order(key: String) = if (key == KEY_CONTINUE) {
+        "(SELECT p.updated FROM progress p WHERE p.playlist_id = e.playlist_id AND p.type = e.type " +
+            "AND p.item_id = e.item_id) DESC"
+    } else {
+        "e.sort"
+    }
+
+    private fun likeEscape(s: String) = s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
     private fun Cursor.getStringOrNull(i: Int): String? = if (isNull(i)) null else getString(i)
 
@@ -259,5 +327,15 @@ class Repository(private val db: Db, private val io: CoroutineDispatcher) {
     companion object {
         const val KEY_ALL = "\u0000all"
         const val KEY_FAV = "\u0000fav"
+        const val KEY_CONTINUE = "\u0000continue"
+        private const val SEARCH_PREFIX = "\u0000search:"
+
+        /** List key for a name search, usable wherever a category key is. */
+        fun searchKey(query: String) = SEARCH_PREFIX + query.trim()
+
+        fun isSearch(key: String) = key.startsWith(SEARCH_PREFIX)
+
+        const val MIN_RESUME_MS = 30_000L
+        const val END_PERCENT = 95
     }
 }

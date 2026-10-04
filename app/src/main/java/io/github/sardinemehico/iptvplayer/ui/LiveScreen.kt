@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
+import android.widget.EditText
 import android.widget.TextView
 import androidx.media3.common.C
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -49,6 +50,7 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
     private val ctlPause: TextView = root.findViewById(R.id.ctl_pause)
     private val ctlAspect: TextView = root.findViewById(R.id.ctl_aspect)
     private val ctlFav: TextView = root.findViewById(R.id.ctl_fav)
+    private val searchField: EditText = root.findViewById(R.id.search)
 
     private val handler = Handler(Looper.getMainLooper())
     private val hideBanner = Runnable { hideOverlay() }
@@ -71,6 +73,9 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
     private var pendingCategory: Job? = null
     /** Set while focus is moved back from full screen, so a passing category row can't switch the list. */
     private var restoringFocus = false
+    /** Name of the list on screen: a category, or the search. */
+    private var listName = ""
+    private val searchBox = SearchBox(searchField, scope, ::onSearch, onSubmit = { focusChannel(0) })
 
     private val playerListener = object : PlayerController.Listener {
         override fun onState(state: PlayerController.State) {
@@ -227,17 +232,36 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
     }
 
     private suspend fun selectCategory(index: Int) {
-        val p = playlist ?: return
         val cat = categories.getOrNull(index) ?: return
+        searchBox.clearQuietly()
         categoryIndex = index
-        categoryKey = cat.key
         categoryAdapter.selected = index
+        showList(cat.key, cat.name)
+    }
+
+    /** Search results replace the channel list; clearing the field goes back to the last category. */
+    private fun onSearch(query: String?) {
+        scope.launch {
+            if (query != null) {
+                pendingCategory?.cancel()
+                categoryIndex = -1
+                categoryAdapter.selected = -1
+                showList(Repository.searchKey(query), activity.getString(R.string.search_results, query))
+            } else if (Repository.isSearch(categoryKey)) {
+                selectCategory(categories.indexOfFirst { it.key == graph.prefs.lastLiveCategory }.coerceAtLeast(0))
+            }
+        }
+    }
+
+    private suspend fun showList(key: String, name: String) {
+        val p = playlist ?: return
+        categoryKey = key
+        listName = name
         categoryJob?.cancel()
-        val count = graph.repo.count(p.id, ContentType.LIVE, cat.key)
+        val count = graph.repo.count(p.id, ContentType.LIVE, key)
         channelCount = count
-        categoryTitle.text = "${cat.name}  ($count)"
+        categoryTitle.text = "$name  ($count)"
         empty.visibility = if (count == 0) View.VISIBLE else View.GONE
-        val key = cat.key
         channelAdapter.reset(count) { offset, limit -> graph.repo.page(p.id, ContentType.LIVE, key, offset, limit) }
         channelAdapter.playingItemId = playingRow?.itemId
         channelsView.scrollToPosition(0)
@@ -284,7 +308,7 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
         channelAdapter.playingItemId = row.itemId
         nowName.text = row.name
         graph.player.play(url)
-        graph.prefs.lastLiveCategory = categoryKey
+        if (!Repository.isSearch(categoryKey)) graph.prefs.lastLiveCategory = categoryKey
         graph.prefs.lastLiveItem = row.itemId
         if (fullscreen) showOverlay(withControls = controls.visibility == View.VISIBLE)
     }
@@ -363,7 +387,7 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
     private fun showOverlay(withControls: Boolean) {
         val row = playingRow ?: return
         bannerName.text = "${playingIndex + 1}  ${row.name}"
-        bannerInfo.text = categories.getOrNull(categoryIndex)?.name.orEmpty()
+        bannerInfo.text = listName
         updateFavLabel()
         updatePauseLabel()
         banner.visibility = View.VISIBLE

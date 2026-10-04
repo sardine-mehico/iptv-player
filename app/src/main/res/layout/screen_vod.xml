@@ -24,6 +24,10 @@
             android:paddingStart="8dp"
             android:textSize="22sp" />
 
+        <EditText
+            android:id="@+id/search"
+            style="@style/SearchInput" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/categories"
             android:layout_width="match_parent"

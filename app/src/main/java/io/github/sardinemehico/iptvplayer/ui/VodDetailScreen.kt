@@ -16,6 +16,7 @@ import io.github.sardinemehico.iptvplayer.data.model.ContentType
 import io.github.sardinemehico.iptvplayer.data.repo.EntryDetails
 import io.github.sardinemehico.iptvplayer.data.repo.EntryRow
 import io.github.sardinemehico.iptvplayer.data.repo.Playlist
+import io.github.sardinemehico.iptvplayer.data.repo.Progress
 import io.github.sardinemehico.iptvplayer.data.source.Episode
 import io.github.sardinemehico.iptvplayer.data.source.VodInfo
 import io.github.sardinemehico.iptvplayer.data.source.XtreamCredentials
@@ -46,6 +47,7 @@ class VodDetailScreen(
     private val people: TextView = root.findViewById(R.id.people)
     private val play: TextView = root.findViewById(R.id.play)
     private val favourite: TextView = root.findViewById(R.id.favourite)
+    private val fromStart: TextView = root.findViewById(R.id.from_start)
     private val busy: View = root.findViewById(R.id.busy)
     private val message: TextView = root.findViewById(R.id.message)
     private val seasonsScroll: View = root.findViewById(R.id.seasons_scroll)
@@ -69,11 +71,14 @@ class VodDetailScreen(
     private var season = -1
     private val episodeAdapter = EpisodeAdapter(::playEpisode)
     private var loaded = false
+    /** Saved position, for Resume. */
+    private var progress: Progress? = null
 
     init {
         root.findViewById<TextView>(R.id.title).text = row.name
         poster.load(row.logo)
-        play.setOnClickListener { onPlay() }
+        play.setOnClickListener { onPlay(resume = true) }
+        fromStart.setOnClickListener { onPlay(resume = false) }
         favourite.setOnClickListener { toggleFavourite() }
         episodesView.layoutManager = LinearLayoutManager(activity)
         episodesView.adapter = episodeAdapter
@@ -88,13 +93,46 @@ class VodDetailScreen(
             loaded = true
             play.requestFocus()
             scope.launch { load() }
+        } else {
+            // Back from the player: the saved position moved (or was cleared).
+            scope.launch { loadProgress() }
         }
+    }
+
+    private suspend fun loadProgress() {
+        progress = graph.repo.progress(playlist.id, type, row.itemId)
+        updatePlayLabel()
+    }
+
+    /** "Play", "Resume 12:34", or for series "Resume S2 E5 · 12:34". */
+    private fun updatePlayLabel() {
+        val p = progress
+        if (p == null) {
+            play.setText(R.string.play)
+            fromStart.visibility = View.GONE
+            return
+        }
+        val at = PlayerUi.time(p.positionMs)
+        if (isEpisodic) {
+            val ep = episodes.firstOrNull { it.id == p.episodeId }
+            if (ep == null) {
+                play.setText(R.string.play)
+                fromStart.visibility = View.GONE
+                return
+            }
+            val label = (if (ep.season > 0) "S${ep.season} " else "") + "E${ep.number}"
+            play.text = activity.getString(R.string.resume_episode, label, at)
+        } else {
+            play.text = activity.getString(R.string.resume_at, at)
+        }
+        fromStart.visibility = View.VISIBLE
     }
 
     private suspend fun load() {
         details = graph.repo.details(playlist.id, type, row.itemId)
         isFav = graph.repo.isFavourite(playlist.id, type, row.itemId)
         updateFavLabel()
+        loadProgress()
         showInfo()
         if (urls == null) return // M3U: nothing more to fetch.
 
@@ -105,6 +143,7 @@ class VodDetailScreen(
                 info = i
                 episodes = eps
                 showSeasons()
+                updatePlayLabel()
             } else {
                 info = graph.syncer.vodInfo(playlist, row.itemId)
             }
@@ -153,7 +192,9 @@ class VodDetailScreen(
         }
         seasonsScroll.visibility = View.VISIBLE
         episodesView.visibility = View.VISIBLE
-        selectSeason(0)
+        // Open on the season being watched, if any.
+        val watching = episodes.firstOrNull { it.id == progress?.episodeId }?.season
+        selectSeason(seasons.indexOf(watching).coerceAtLeast(0))
     }
 
     private fun selectSeason(i: Int) {
@@ -173,25 +214,46 @@ class VodDetailScreen(
         episodesView.post { episodesView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus() }
     }
 
-    private fun playEpisode(index: Int) {
+    /** Plays one episode of the shown season, queueing the rest. The saved episode resumes. */
+    private fun playEpisode(index: Int, resume: Boolean = true) {
         val u = urls ?: return
         val list = seasonEpisodes()
         val prefix = seasons.getOrNull(season)?.takeIf { it > 0 }?.let { "S$it " } ?: ""
-        val items = list.map { PlayItem(u.episode(it.id, it.containerExt ?: "mp4"), "${row.name} · ${prefix}E${it.number} ${it.title}") }
-        activity.push(PlayerScreen(activity, items, index))
+        val items = list.map {
+            PlayItem(
+                url = u.episode(it.id, it.containerExt ?: "mp4"),
+                title = "${row.name} · ${prefix}E${it.number} ${it.title}",
+                type = type,
+                itemId = row.itemId,
+                episodeId = it.id,
+            )
+        }
+        val p = progress
+        val startMs = if (resume && p != null && list.getOrNull(index)?.id == p.episodeId) p.positionMs else 0
+        activity.push(PlayerScreen(activity, items, index, startMs))
     }
 
     // ---- actions ----
 
-    private fun onPlay() {
+    private fun onPlay(resume: Boolean) {
+        val p = progress
         if (isEpisodic) {
-            if (seasonEpisodes().isNotEmpty()) playEpisode(0) else activity.toast(activity.getString(R.string.loading))
+            if (episodes.isEmpty()) return activity.toast(activity.getString(R.string.loading))
+            // Resume goes to the saved episode (switching season if needed); else the season's first.
+            val saved = episodes.firstOrNull { it.id == p?.episodeId }
+            if (saved != null) {
+                selectSeason(seasons.indexOf(saved.season))
+                playEpisode(seasonEpisodes().indexOfFirst { it.id == saved.id }, resume)
+            } else {
+                playEpisode(0)
+            }
             return
         }
         val url = row.streamUrl
             ?: urls?.movie(row.itemId, info?.containerExt ?: details?.ext ?: row.ext ?: "mp4")
             ?: return
-        activity.push(PlayerScreen(activity, listOf(PlayItem(url, row.name)), 0))
+        val item = PlayItem(url, row.name, type, row.itemId)
+        activity.push(PlayerScreen(activity, listOf(item), 0, if (resume) p?.positionMs ?: 0 else 0))
     }
 
     private fun toggleFavourite() {

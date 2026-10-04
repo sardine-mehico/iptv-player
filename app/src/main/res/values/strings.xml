@@ -64,4 +64,10 @@
     <string name="ctl_forward">30s »</string>
     <string name="ctl_prev_ep">‹ Prev ep</string>
     <string name="ctl_next_ep">Next ep ›</string>
+
+    <string name="search">Search</string>
+    <string name="search_results">Search: “%1$s”</string>
+    <string name="resume_at">Resume %1$s</string>
+    <string name="resume_episode">Resume %1$s · %2$s</string>
+    <string name="from_start">From start</string>
 </resources>

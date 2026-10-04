@@ -74,13 +74,34 @@ class Db(context: Context) : SQLiteOpenHelper(context, "iptv.db", null, VERSION)
                 PRIMARY KEY (playlist_id, type, item_id)
             )""",
         )
+        createProgress(db)
+    }
+
+    /**
+     * Where a movie or series was left. One row per movie / per series (its last episode).
+     * Kept outside `entry`, like favourites, so it survives a re-sync.
+     */
+    private fun createProgress(db: SQLiteDatabase) {
+        db.execSQL(
+            """CREATE TABLE IF NOT EXISTS progress (
+                playlist_id INTEGER NOT NULL,
+                type INTEGER NOT NULL,
+                item_id TEXT NOT NULL,
+                episode_id TEXT,
+                position_ms INTEGER NOT NULL,
+                duration_ms INTEGER NOT NULL,
+                updated INTEGER NOT NULL,
+                PRIMARY KEY (playlist_id, type, item_id)
+            )""",
+        )
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) db.execSQL("ALTER TABLE playlist ADD COLUMN pin_hash TEXT")
+        if (oldVersion < 3) createProgress(db)
     }
 
     companion object {
-        const val VERSION = 2
+        const val VERSION = 3
     }
 }

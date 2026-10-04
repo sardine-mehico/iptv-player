@@ -6,13 +6,25 @@ import android.view.KeyEvent
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.C
 import io.github.sardinemehico.iptvplayer.MainActivity
 import io.github.sardinemehico.iptvplayer.R
+import io.github.sardinemehico.iptvplayer.data.model.ContentType
 import io.github.sardinemehico.iptvplayer.player.PlayerController
+import kotlinx.coroutines.launch
 
-/** Something the movie/episode player can play. */
-class PlayItem(val url: String, val title: String)
+/**
+ * Something the movie/episode player can play. With [type] and [itemId] (the movie, or the
+ * series for an episode) its position is saved for "Continue watching".
+ */
+class PlayItem(
+    val url: String,
+    val title: String,
+    val type: ContentType? = null,
+    val itemId: String? = null,
+    val episodeId: String? = null,
+)
 
 /**
  * Full-screen player for movies and episodes. [items] is the queue (one movie, or a season's
@@ -26,6 +38,7 @@ class PlayerScreen(
     activity: MainActivity,
     private val items: List<PlayItem>,
     start: Int,
+    startPositionMs: Long = 0,
 ) : Screen(activity) {
 
     override val root: View = inflater.inflate(R.layout.screen_player, null)
@@ -43,7 +56,9 @@ class PlayerScreen(
 
     private var index = start.coerceIn(0, items.lastIndex)
     /** Where to pick up after the app was in the background (onStop stops the stream). */
-    private var resumeAt = 0L
+    private var resumeAt = startPositionMs
+    /** True once the current item actually played; a stream that never starts saves nothing. */
+    private var started = false
     private val handler = Handler(Looper.getMainLooper())
     private val hide = Runnable { hideOverlay() }
 
@@ -65,6 +80,7 @@ class PlayerScreen(
             }
             osdStatus.text = text
             osdStatus.visibility = if (text.isEmpty()) View.GONE else View.VISIBLE
+            if (state == PlayerController.State.PLAYING) started = true
             if (state == PlayerController.State.ENDED) {
                 if (index < items.lastIndex) step(+1) else activity.pop()
             }
@@ -102,6 +118,7 @@ class PlayerScreen(
         activity.keepScreenOn(false)
         graph.player.removeListener(listener)
         resumeAt = graph.player.positionMs
+        saveProgress()
         graph.player.stop()
         handler.removeCallbacksAndMessages(null)
         overlay.visibility = View.GONE
@@ -142,6 +159,7 @@ class PlayerScreen(
     private fun play() {
         val item = items[index]
         title.text = item.title
+        started = false
         graph.player.play(item.url)
         if (resumeAt > 0) graph.player.player.seekTo(resumeAt)
         resumeAt = 0
@@ -151,10 +169,26 @@ class PlayerScreen(
     private fun step(delta: Int) {
         val next = index + delta
         if (next !in items.indices) return
+        saveProgress()
         index = next
         resumeAt = 0
         play()
         showOverlay()
+    }
+
+    /**
+     * Saves where the current item is. Runs in the activity's scope: this screen's own scope is
+     * cancelled the moment it is popped, before the write could happen.
+     */
+    private fun saveProgress() {
+        val item = items[index]
+        val type = item.type ?: return
+        val id = item.itemId ?: return
+        if (!started) return
+        val pos = graph.player.positionMs
+        val dur = graph.player.durationMs
+        val playlistId = graph.prefs.activePlaylist
+        activity.lifecycleScope.launch { graph.repo.saveProgress(playlistId, type, id, item.episodeId, pos, dur) }
     }
 
     private fun seek(deltaMs: Long) {

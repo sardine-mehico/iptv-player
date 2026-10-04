@@ -3,6 +3,7 @@ package io.github.sardinemehico.iptvplayer.ui
 import android.graphics.Rect
 import android.view.KeyEvent
 import android.view.View
+import android.widget.EditText
 import android.widget.TextView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -30,6 +31,7 @@ class VodScreen(activity: MainActivity, private val type: ContentType) : Screen(
     private val grid: RecyclerView = root.findViewById(R.id.grid)
     private val categoryTitle: TextView = root.findViewById(R.id.category_title)
     private val empty: View = root.findViewById(R.id.empty)
+    private val searchField: EditText = root.findViewById(R.id.search)
 
     private val categoryAdapter = CategoryAdapter(onFocused = ::onCategoryFocused, onClicked = ::onCategoryClicked)
     private val posterAdapter = PagedEntryAdapter(scope, ::onPosterClicked, R.layout.row_poster)
@@ -45,6 +47,7 @@ class VodScreen(activity: MainActivity, private val type: ContentType) : Screen(
     private var lastOpened = -1
     /** Favourite state set on that page, applied to the grid on return. */
     private var favChanged: Boolean? = null
+    private val searchBox = SearchBox(searchField, scope, ::onSearch, onSubmit = { focusPoster(0) })
 
     init {
         root.findViewById<TextView>(R.id.title).setText(if (type == ContentType.MOVIE) R.string.movies else R.string.series)
@@ -67,8 +70,10 @@ class VodScreen(activity: MainActivity, private val type: ContentType) : Screen(
         } else if (lastOpened >= 0) {
             val fav = favChanged
             favChanged = null
-            if (fav != null && categoryKey == Repository.KEY_FAV) {
-                scope.launch { selectCategory(categoryIndex); focusPoster(lastOpened) }
+            // "Continue watching" changes order (or loses the title) after playback.
+            val reload = categoryKey == Repository.KEY_CONTINUE || (fav != null && categoryKey == Repository.KEY_FAV)
+            if (reload) {
+                scope.launch { reloadList(); focusPoster(if (categoryKey == Repository.KEY_CONTINUE) 0 else lastOpened) }
             } else {
                 if (fav != null) posterAdapter.setFavourite(lastOpened, fav)
                 focusPoster(lastOpened)
@@ -86,7 +91,7 @@ class VodScreen(activity: MainActivity, private val type: ContentType) : Screen(
         scope.launch {
             val fav = graph.repo.toggleFavourite(p.id, type, row.itemId)
             activity.toast(activity.getString(if (fav) R.string.favourite_added else R.string.favourite_removed))
-            if (categoryKey == Repository.KEY_FAV) selectCategory(categoryIndex) else posterAdapter.setFavourite(pos, fav)
+            if (categoryKey == Repository.KEY_FAV) reloadList() else posterAdapter.setFavourite(pos, fav)
         }
         return true
     }
@@ -118,15 +123,41 @@ class VodScreen(activity: MainActivity, private val type: ContentType) : Screen(
     }
 
     private suspend fun selectCategory(index: Int) {
-        val p = playlist ?: return
         val cat = categories.getOrNull(index) ?: return
+        searchBox.clearQuietly()
         categoryIndex = index
-        categoryKey = cat.key
         categoryAdapter.selected = index
-        count = graph.repo.count(p.id, type, cat.key)
-        categoryTitle.text = "${cat.name}  ($count)"
+        showList(cat.key, cat.name)
+    }
+
+    private var listName = ""
+
+    private suspend fun reloadList() = showList(categoryKey, listName)
+
+    /** Search results replace the grid; clearing the field goes back to the category. */
+    private fun onSearch(query: String?) {
+        scope.launch {
+            if (query != null) {
+                pendingCategory?.cancel()
+                lastCategory = categoryIndex.takeIf { it >= 0 } ?: lastCategory
+                categoryIndex = -1
+                categoryAdapter.selected = -1
+                showList(Repository.searchKey(query), activity.getString(R.string.search_results, query))
+            } else if (Repository.isSearch(categoryKey)) {
+                selectCategory(lastCategory)
+            }
+        }
+    }
+
+    private var lastCategory = 0
+
+    private suspend fun showList(key: String, name: String) {
+        val p = playlist ?: return
+        categoryKey = key
+        listName = name
+        count = graph.repo.count(p.id, type, key)
+        categoryTitle.text = "$name  ($count)"
         empty.visibility = if (count == 0) View.VISIBLE else View.GONE
-        val key = cat.key
         posterAdapter.reset(count) { offset, limit -> graph.repo.page(p.id, type, key, offset, limit) }
         grid.scrollToPosition(0)
     }
