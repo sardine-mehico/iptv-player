@@ -135,7 +135,7 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
             loaded = true
             scope.launch { load() }
         } else {
-            playingRow?.let { play(playingIndex, it) }
+            playingRow?.let { play(playingIndex, it, fromCategory = categoryAdapter.playing) }
         }
     }
 
@@ -307,10 +307,13 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
         }
     }
 
-    private fun play(index: Int, row: EntryRow) {
+    /** [fromCategory]: the category list [index] belongs to (the shown one, unless replaying). */
+    private fun play(index: Int, row: EntryRow, fromCategory: Int = categoryIndex) {
         val url = row.streamUrl ?: urls?.live(row.itemId, liveExt) ?: return
         playingIndex = index
         playingRow = row
+        // Mark the category this channel was picked from (none for search results).
+        categoryAdapter.playing = fromCategory
         channelAdapter.playingItemId = row.itemId
         nowName.text = row.name
         graph.player.play(url)

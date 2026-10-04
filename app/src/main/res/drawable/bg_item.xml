@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Focus highlight for list rows: flat fill, no elevation or animation. -->
+<!-- List row states: flat fills and outlines, no elevation or animation. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_focused="true">
         <shape android:shape="rectangle">
@@ -7,9 +7,25 @@
             <corners android:radius="6dp" />
         </shape>
     </item>
+    <!-- Playing (activated) and also the list being browsed (selected): fill + outline. -->
+    <item android:state_activated="true" android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surface_active" />
+            <stroke android:width="2dp" android:color="@color/accent" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <!-- Playing: the channel now playing, and the category it is in. -->
     <item android:state_activated="true">
         <shape android:shape="rectangle">
             <solid android:color="@color/surface_active" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <!-- Selected: the category whose list is shown. -->
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <stroke android:width="2dp" android:color="@color/accent" />
             <corners android:radius="6dp" />
         </shape>
     </item>

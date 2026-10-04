@@ -25,7 +25,17 @@ class CategoryAdapter(
             notifyDataSetChanged()
         }
 
+    /** Category whose items are listed (outlined). */
     var selected = -1
+        set(value) {
+            val old = field
+            field = value
+            if (old >= 0) notifyItemChanged(old)
+            if (value >= 0) notifyItemChanged(value)
+        }
+
+    /** Category the playing channel was chosen from (filled, like the playing channel), or -1. */
+    var playing = -1
         set(value) {
             val old = field
             field = value
@@ -47,7 +57,8 @@ class CategoryAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         holder.text.text = items[position].name
-        holder.text.isActivated = position == selected
+        holder.text.isSelected = position == selected
+        holder.text.isActivated = position == playing
     }
 
     inner class VH(val text: TextView) : RecyclerView.ViewHolder(text) {
