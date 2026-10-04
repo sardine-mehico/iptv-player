@@ -51,6 +51,15 @@
             android:gravity="center_vertical|start"
             android:text="@string/dns_system" />
 
+        <!-- Make WorldTV the box's Home screen (default launcher). Shows "already" once it is. -->
+        <TextView
+            android:id="@+id/default_home"
+            style="@style/TileButton"
+            android:layout_width="match_parent"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical|start"
+            android:text="@string/home_make_default" />
+
         <!-- Way out to other apps and the box's own settings: needed when WorldTV is the launcher. -->
         <LinearLayout
             android:layout_width="match_parent"

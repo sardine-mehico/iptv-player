@@ -7,6 +7,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import coil3.load
+import coil3.request.error
+import coil3.request.fallback
 import io.github.sardinemehico.iptvplayer.R
 import io.github.sardinemehico.iptvplayer.data.repo.CategoryRow
 import io.github.sardinemehico.iptvplayer.data.repo.EntryRow
@@ -148,7 +150,16 @@ class PagedEntryAdapter(
         }
         holder.name.text = row.name
         holder.fav?.visibility = if (row.favourite) View.VISIBLE else View.GONE
-        holder.logo.load(row.logo)
+        if (layout == R.layout.row_channel) {
+            // Channels without a logo, or whose logo link is broken, get a muted stand-in so
+            // every row looks the same.
+            holder.logo.load(row.logo) {
+                fallback(R.drawable.ic_channel_placeholder)
+                error(R.drawable.ic_channel_placeholder)
+            }
+        } else {
+            holder.logo.load(row.logo)
+        }
         holder.itemView.isActivated = row.itemId == playingItemId
     }
 

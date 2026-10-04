@@ -13,6 +13,7 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.util.UnstableApi
@@ -82,6 +83,20 @@ class MainActivity : ComponentActivity() {
             playlists.isEmpty() -> push(AddPlaylistScreen(this, firstRun = true))
             active == null -> push(PlaylistsScreen(this))
         }
+    }
+
+    private var resultCallback: ((Int) -> Unit)? = null
+
+    /** For system dialogs that report back (e.g. "set as Home app"). Registered before onStart, as required. */
+    private val resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        resultCallback?.invoke(r.resultCode)
+        resultCallback = null
+    }
+
+    /** Starts [intent] and calls [done] with its result code. */
+    fun launchForResult(intent: Intent, done: (Int) -> Unit) {
+        resultCallback = done
+        resultLauncher.launch(intent)
     }
 
     /** True when the box opened us as its launcher (Home), not from the app list. */

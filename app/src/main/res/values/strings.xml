@@ -106,4 +106,9 @@
     <string name="dns_system">DNS: Box default</string>
     <string name="dns_cloudflare">DNS: Cloudflare 1.1.1.1 (encrypted)</string>
     <string name="dns_google">DNS: Google 8.8.8.8 (encrypted)</string>
+
+    <string name="home_make_default">Make WorldTV the Home screen (default launcher)</string>
+    <string name="home_is_default">WorldTV is the Home screen ✓</string>
+    <string name="home_pick_worldtv">Choose WorldTV as the Home app</string>
+    <string name="home_no_setting">This box has no Home app setting. Look for “Default apps” or “Launcher” in its settings.</string>
 </resources>

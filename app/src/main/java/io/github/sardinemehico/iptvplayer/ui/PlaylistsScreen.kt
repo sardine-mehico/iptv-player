@@ -30,6 +30,7 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
     private val busyDots: View = root.findViewById(R.id.busy)
     private val autoStart: TextView = root.findViewById(R.id.auto_start)
     private val autoStartStatus: TextView = root.findViewById(R.id.auto_start_status)
+    private val defaultHome: TextView = root.findViewById(R.id.default_home)
     private var busy = false
 
     init {
@@ -55,7 +56,15 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
             }
         }
         root.findViewById<View>(R.id.android_settings).setOnClickListener { Apps.openAndroidSettings(activity) }
+        defaultHome.setOnClickListener {
+            if (Apps.isDefaultHome(activity)) return@setOnClickListener
+            Apps.requestDefaultHome(activity) { updateDefaultHome() }
+        }
         updateAutoStart()
+    }
+
+    private fun updateDefaultHome() {
+        defaultHome.setText(if (Apps.isDefaultHome(activity)) R.string.home_is_default else R.string.home_make_default)
     }
 
     private fun canLaunchAtBoot() = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Settings.canDrawOverlays(activity)
@@ -103,6 +112,7 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
     override fun onShown() {
         activity.hideVideo()
         updateAutoStart() // the permission may have been granted in system settings meanwhile
+        updateDefaultHome() // may have been changed in system settings meanwhile
         graph.player.stop()
         reload()
     }

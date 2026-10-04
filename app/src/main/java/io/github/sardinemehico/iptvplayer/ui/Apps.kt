@@ -1,7 +1,11 @@
 package io.github.sardinemehico.iptvplayer.ui
 
 import android.app.AlertDialog
+import android.app.Activity
+import android.app.role.RoleManager
 import android.content.ActivityNotFoundException
+import android.os.Build
+import android.os.SystemClock
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -69,6 +73,52 @@ object Apps {
             activity.startActivity(Intent(android.provider.Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (e: ActivityNotFoundException) {
             activity.toast(activity.getString(R.string.app_missing))
+        }
+    }
+
+    /** True if WorldTV is the box's default Home app (launcher). */
+    fun isDefaultHome(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roles = context.getSystemService(RoleManager::class.java)
+            if (roles != null && roles.isRoleAvailable(RoleManager.ROLE_HOME)) return roles.isRoleHeld(RoleManager.ROLE_HOME)
+        }
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        return context.packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)
+            ?.activityInfo?.packageName == context.packageName
+    }
+
+    /**
+     * Asks Android to make WorldTV the Home app. Android 10+ shows its own "Set as default Home
+     * app?" dialog (RoleManager). Some TV builds have no such dialog and return at once; then,
+     * and on older Android, the Home app settings page opens instead. Box firmwares that hide
+     * that page get the main Settings.
+     */
+    fun requestDefaultHome(activity: MainActivity, onDone: () -> Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roles = activity.getSystemService(RoleManager::class.java)
+            if (roles != null && roles.isRoleAvailable(RoleManager.ROLE_HOME)) {
+                val started = SystemClock.elapsedRealtime()
+                activity.launchForResult(roles.createRequestRoleIntent(RoleManager.ROLE_HOME)) { result ->
+                    val instant = SystemClock.elapsedRealtime() - started < 700
+                    if (result != Activity.RESULT_OK && instant && !roles.isRoleHeld(RoleManager.ROLE_HOME)) {
+                        openHomeSettings(activity) // no dialog on this box
+                    }
+                    onDone()
+                }
+                return
+            }
+        }
+        openHomeSettings(activity)
+        onDone()
+    }
+
+    private fun openHomeSettings(activity: MainActivity) {
+        try {
+            activity.startActivity(Intent(android.provider.Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            activity.toast(activity.getString(R.string.home_pick_worldtv))
+        } catch (e: ActivityNotFoundException) {
+            activity.toast(activity.getString(R.string.home_no_setting))
+            openAndroidSettings(activity)
         }
     }
 
