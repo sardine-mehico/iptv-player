@@ -112,6 +112,38 @@ object Apps {
         onDone()
     }
 
+    /**
+     * WorldTV is already the Home app: open Android's Home app setting so the user can go back to
+     * the box's own launcher or choose another. Boxes without that page get a list of installed
+     * launchers to open instead (the box then asks which to keep, if it does).
+     */
+    fun changeDefaultHome(activity: MainActivity) {
+        try {
+            activity.startActivity(Intent(android.provider.Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: ActivityNotFoundException) {
+            val launchers = launchers(activity)
+            pick(activity, R.string.choose_launcher, launchers) { app ->
+                val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setPackage(app.pkg)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                try {
+                    activity.startActivity(home)
+                } catch (e: ActivityNotFoundException) {
+                    activity.toast(activity.getString(R.string.app_missing))
+                }
+            }
+        }
+    }
+
+    /** Installed launchers (apps that can be the Home screen), WorldTV included. */
+    fun launchers(context: Context): List<LaunchableApp> {
+        val pm = context.packageManager
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        return pm.queryIntentActivities(home, 0)
+            .filter { it.priority >= 0 } // skips Android's built-in "fallback home"
+            .map { LaunchableApp(it.activityInfo.packageName, it.loadLabel(pm).toString(), it.loadIcon(pm), null) }
+            .distinctBy { it.pkg }
+    }
+
     private fun openHomeSettings(activity: MainActivity) {
         try {
             activity.startActivity(Intent(android.provider.Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

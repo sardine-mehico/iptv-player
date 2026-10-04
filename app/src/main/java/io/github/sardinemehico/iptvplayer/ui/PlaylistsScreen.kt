@@ -21,33 +21,49 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** App Settings: auto-start on boot, all apps, Android settings, and the saved playlists (open, refresh, details, delete, add). */
+/**
+ * App Settings, in sections: Home screen (default launcher, app slots), Start-up (auto-start),
+ * Playback & network (DNS), Shortcuts (All apps, System settings) and Playlists (open, refresh,
+ * details, delete, add). Each setting row shows its name, a one-line explanation and its value.
+ */
 class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
+
+    /** One row of row_setting.xml. */
+    private class SettingRow(val view: View) {
+        val title: TextView = view.findViewById(R.id.setting_title)
+        val summary: TextView = view.findViewById(R.id.setting_summary)
+        val value: TextView = view.findViewById(R.id.setting_value)
+    }
 
     override val root: View = inflater.inflate(R.layout.screen_playlists, null)
     private val list: LinearLayout = root.findViewById(R.id.list)
     private val add: TextView = root.findViewById(R.id.add)
     private val message: TextView = root.findViewById(R.id.message)
     private val busyDots: View = root.findViewById(R.id.busy)
-    private val autoStart: TextView = root.findViewById(R.id.auto_start)
-    private val autoStartStatus: TextView = root.findViewById(R.id.auto_start_status)
-    private val defaultHome: TextView = root.findViewById(R.id.default_home)
+    private val homeRow = SettingRow(root.findViewById(R.id.default_home))
+    private val slotsRow = SettingRow(root.findViewById(R.id.slot_count))
+    private val autoStartRow = SettingRow(root.findViewById(R.id.auto_start))
+    private val dnsRow = SettingRow(root.findViewById(R.id.dns))
     private var busy = false
+    private var firstShow = true
 
     init {
         add.setOnClickListener { activity.push(AddPlaylistScreen(activity)) }
-        autoStart.setOnClickListener { toggleAutoStart() }
-        val slotCount = root.findViewById<TextView>(R.id.slot_count)
-        fun showSlotCount() { slotCount.text = activity.getString(R.string.slot_count, graph.prefs.appSlotCount) }
-        fun changeSlots(delta: Int, wrap: Boolean) {
-            var n = graph.prefs.appSlotCount + delta
-            if (n > Prefs.MAX_SLOTS) n = if (wrap) Prefs.MIN_SLOTS else Prefs.MAX_SLOTS
-            if (n < Prefs.MIN_SLOTS) n = Prefs.MIN_SLOTS
-            graph.prefs.appSlotCount = n
-            showSlotCount()
+
+        homeRow.title.setText(R.string.set_launcher_title)
+        homeRow.view.setOnClickListener {
+            if (Apps.isDefaultHome(activity)) {
+                // Already the Home app: let the user go back to the box's launcher or pick another.
+                Apps.changeDefaultHome(activity)
+            } else {
+                Apps.requestDefaultHome(activity) { updateDefaultHome() }
+            }
         }
-        slotCount.setOnClickListener { changeSlots(+1, wrap = true) }
-        slotCount.setOnKeyListener { _, keyCode, event ->
+
+        slotsRow.title.setText(R.string.set_slots_title)
+        slotsRow.summary.setText(R.string.set_slots_summary)
+        slotsRow.view.setOnClickListener { changeSlots(+1, wrap = true) }
+        slotsRow.view.setOnKeyListener { _, keyCode, event ->
             if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
             when (keyCode) {
                 KeyEvent.KEYCODE_DPAD_LEFT -> { changeSlots(-1, wrap = false); true }
@@ -55,20 +71,19 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
                 else -> false
             }
         }
-        showSlotCount()
-        val dns = root.findViewById<TextView>(R.id.dns)
-        fun showDns() = dns.setText(
-            when (graph.prefs.dnsMode) {
-                AppDns.MODE_CLOUDFLARE -> R.string.dns_cloudflare
-                AppDns.MODE_GOOGLE -> R.string.dns_google
-                else -> R.string.dns_system
-            },
-        )
-        dns.setOnClickListener {
+        showSlots()
+
+        autoStartRow.title.setText(R.string.set_autostart_title)
+        autoStartRow.view.setOnClickListener { toggleAutoStart() }
+
+        dnsRow.title.setText(R.string.set_dns_title)
+        dnsRow.summary.setText(R.string.set_dns_summary)
+        dnsRow.view.setOnClickListener {
             graph.prefs.dnsMode = (graph.prefs.dnsMode + 1) % 3
             showDns()
         }
         showDns()
+
         root.findViewById<View>(R.id.all_apps).setOnClickListener {
             scope.launch {
                 val apps = withContext(graph.io) { Apps.list(activity) }
@@ -76,25 +91,48 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
             }
         }
         root.findViewById<View>(R.id.android_settings).setOnClickListener { Apps.openAndroidSettings(activity) }
-        defaultHome.setOnClickListener {
-            if (Apps.isDefaultHome(activity)) return@setOnClickListener
-            Apps.requestDefaultHome(activity) { updateDefaultHome() }
-        }
-        updateAutoStart()
+    }
+
+    private fun changeSlots(delta: Int, wrap: Boolean) {
+        var n = graph.prefs.appSlotCount + delta
+        if (n > Prefs.MAX_SLOTS) n = if (wrap) Prefs.MIN_SLOTS else Prefs.MAX_SLOTS
+        if (n < Prefs.MIN_SLOTS) n = Prefs.MIN_SLOTS
+        graph.prefs.appSlotCount = n
+        showSlots()
+    }
+
+    private fun showSlots() {
+        slotsRow.value.text = activity.getString(R.string.set_slots_value, graph.prefs.appSlotCount)
+    }
+
+    private fun showDns() {
+        dnsRow.value.setText(
+            when (graph.prefs.dnsMode) {
+                AppDns.MODE_CLOUDFLARE -> R.string.set_dns_cloudflare
+                AppDns.MODE_GOOGLE -> R.string.set_dns_google
+                else -> R.string.set_dns_box
+            },
+        )
     }
 
     private fun updateDefaultHome() {
-        defaultHome.setText(if (Apps.isDefaultHome(activity)) R.string.home_is_default else R.string.home_make_default)
+        val isHome = Apps.isDefaultHome(activity)
+        homeRow.value.setText(if (isHome) R.string.set_launcher_is_worldtv else R.string.set_launcher_other)
+        homeRow.summary.setText(if (isHome) R.string.set_launcher_summary_worldtv else R.string.set_launcher_summary_other)
     }
 
     private fun canLaunchAtBoot() = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Settings.canDrawOverlays(activity)
 
-    /** Toggle text, plus what happened at the last boot and what's still missing. */
+    /** On/Off, plus what happened at the last boot and anything still missing. */
     private fun updateAutoStart() {
         val prefs = graph.prefs
-        autoStart.setText(if (prefs.autoStart) R.string.auto_start_on else R.string.auto_start_off)
+        autoStartRow.value.setText(if (prefs.autoStart) R.string.set_on else R.string.set_off)
+        if (Apps.isDefaultHome(activity)) {
+            autoStartRow.summary.setText(R.string.set_autostart_summary_home)
+            return
+        }
         if (!prefs.autoStart) {
-            autoStartStatus.visibility = View.GONE
+            autoStartRow.summary.setText(R.string.set_autostart_summary_off)
             return
         }
         val lines = ArrayList<String>()
@@ -106,8 +144,7 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
             val time = java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(java.util.Date(at))
             activity.getString(if (prefs.lastBootAllowed) R.string.auto_start_last_boot else R.string.auto_start_last_boot_blocked, time)
         }
-        autoStartStatus.text = lines.joinToString("\n\n")
-        autoStartStatus.visibility = View.VISIBLE
+        autoStartRow.summary.text = lines.joinToString("\n")
     }
 
     private fun toggleAutoStart() {
@@ -131,8 +168,8 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
 
     override fun onShown() {
         activity.hideVideo()
-        updateAutoStart() // the permission may have been granted in system settings meanwhile
         updateDefaultHome() // may have been changed in system settings meanwhile
+        updateAutoStart() // the permission may have been granted meanwhile
         graph.player.stop()
         reload()
     }
@@ -145,7 +182,14 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
             list.removeAllViews()
             val active = graph.prefs.activePlaylist
             for (p in playlists) list.addView(row(p, p.id == active))
-            (list.getChildAt(playlists.indexOfFirst { it.id == active }.coerceAtLeast(0)) ?: add).requestFocus()
+            // First visit: start at the top. Coming back (from a sub-screen or the system's Home
+            // setting): keep whatever had focus.
+            if (firstShow) {
+                firstShow = false
+                homeRow.view.requestFocus()
+            } else if (activity.currentFocus == null || activity.currentFocus?.parent === list) {
+                (list.getChildAt(playlists.indexOfFirst { it.id == active }.coerceAtLeast(0)) ?: add).requestFocus()
+            }
         }
     }
 

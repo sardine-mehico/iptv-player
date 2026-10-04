@@ -113,4 +113,30 @@
     <string name="home_no_setting">This box has no Home app setting. Look for “Default apps” or “Launcher” in its settings.</string>
 
     <string name="slot_count">Home screen app slots: ‹ %1$d ›   (Left / Right to change)</string>
+
+    <string name="settings_hint">↑ ↓ to move · OK to change · Back to leave</string>
+    <string name="section_home">Home screen</string>
+    <string name="section_startup">Start-up</string>
+    <string name="section_network">Playback &amp; network</string>
+    <string name="section_shortcuts">Shortcuts</string>
+    <string name="playlists_hint">OK opens a playlist · Menu or long-press for refresh, details and delete</string>
+    <string name="set_launcher_title">Default launcher (Home app)</string>
+    <string name="set_launcher_is_worldtv">WorldTV ✓</string>
+    <string name="set_launcher_other">Another launcher</string>
+    <string name="set_launcher_summary_worldtv">OK to switch back to the box\'s own launcher or pick a different one.</string>
+    <string name="set_launcher_summary_other">OK to make WorldTV the Home screen, so the remote\'s Home button opens it.</string>
+    <string name="set_slots_title">App slots on the home screen</string>
+    <string name="set_slots_value">‹ %1$d ›</string>
+    <string name="set_slots_summary">Left / Right to change (2–14). More than 5 continue on a third row.</string>
+    <string name="set_autostart_title">Open WorldTV when the box starts</string>
+    <string name="set_on">On</string>
+    <string name="set_off">Off</string>
+    <string name="set_autostart_summary_off">OK to turn on.</string>
+    <string name="set_autostart_summary_home">Not needed while WorldTV is the Home app: the box opens it anyway.</string>
+    <string name="set_dns_title">DNS for WorldTV</string>
+    <string name="set_dns_box">Box default</string>
+    <string name="set_dns_cloudflare">Cloudflare 1.1.1.1</string>
+    <string name="set_dns_google">Google 8.8.8.8</string>
+    <string name="set_dns_summary">OK to change. Encrypted DNS only helps if your internet provider blocks your IPTV provider.</string>
+    <string name="choose_launcher">Open a launcher</string>
 </resources>
