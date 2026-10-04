@@ -101,14 +101,20 @@ object AppUpdates {
         }
     }
 
+    /**
+     * After the user allowed "install unknown apps" and came back (to any WorldTV screen), carry
+     * on with the downloaded update. Called from MainActivity.onStart.
+     */
+    fun resumeInstall(activity: MainActivity) {
+        val file = readyToInstall ?: return
+        if (!canInstall(activity)) return
+        readyToInstall = null
+        install(activity, file)
+    }
+
     /** Shows the waiting offer, if any. Called by the home screen when it is on screen. */
     fun offerPending(activity: MainActivity, scope: CoroutineScope) {
-        val file = readyToInstall
-        if (file != null && canInstall(activity)) {
-            readyToInstall = null
-            install(activity, file)
-            return
-        }
+        if (readyToInstall != null) return resumeInstall(activity)
         val release = pending ?: return
         if (App.graph.player.playingUrl != null) return // never interrupt playback
         pending = null

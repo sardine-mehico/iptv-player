@@ -220,6 +220,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        io.github.sardinemehico.iptvplayer.ui.AppUpdates.resumeInstall(this)
         stack.lastOrNull()?.onShown()
     }
 
