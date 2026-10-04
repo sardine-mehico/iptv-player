@@ -17,8 +17,8 @@ MVP document: https://claude.ai/code/artifact/f7b3b895-aef4-4a3d-9555-9848fd1bd0
 - **Native code:** only the Jellyfin `media3-ffmpeg-decoder` (audio-only FFmpeg, GPL-3.0), used as a fallback
   for audio the box can't decode (AC-3/E-AC-3/MP2/DTS). ARM ABIs only. No other native code (no libVLC,
   no video FFmpeg). Anything still unplayable goes to an external player ("Open in…"), as IBO does.
-- **License:** GPL-3.0 (required by the FFmpeg decoder). Keep LICENSE, the README section and the
-  in-app notice in App Settings.
+- **License:** GPL-3.0 (required by the FFmpeg decoder). Keep LICENSE and the README section, and keep
+  the source public. No licence text in the app UI (owner's choice).
 - minSdk 24, targetSdk 36. English only (`resourceConfigurations = en`) until translations exist.
 
 ## Performance rules (target: 1 GB RAM, Cortex-A53, Mali-400/450)

@@ -126,15 +126,6 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1" />
         </LinearLayout>
-
-        <!-- GPL-3.0 "appropriate legal notice" for an interactive program. -->
-        <TextView
-            style="@style/Text.Secondary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/license_notice"
-            android:textSize="13sp" />
     </LinearLayout>
     </ScrollView>
 </FrameLayout>
