@@ -1,7 +1,11 @@
 <resources>
     <color name="background">#FF0E1116</color>
     <color name="surface">#FF1A1F27</color>
+    <color name="surface_active">#FF263041</color>
+    <color name="divider">#FF2A313C</color>
     <color name="accent">#FF2F80ED</color>
     <color name="text_primary">#FFF2F4F7</color>
     <color name="text_secondary">#FF98A2B3</color>
+    <color name="error">#FFF97066</color>
+    <color name="scrim">#CC0E1116</color>
 </resources>

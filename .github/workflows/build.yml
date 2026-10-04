@@ -24,11 +24,19 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Unit tests
-        run: ./gradlew --no-daemon testReleaseUnitTest
+      - name: Unit tests and release APK
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon testReleaseUnitTest assembleRelease 2>&1 | tee build.log
 
-      - name: Build release APK
-        run: ./gradlew --no-daemon assembleRelease
+      # Logs aren't always reachable from outside; surface the errors as an annotation.
+      - name: Report build errors
+        if: failure()
+        run: |
+          [ -f build.log ] || exit 0
+          MSG=$(grep -E "^e: |^w: .*(error|Error)|Error:|error:|FAILED|What went wrong|^> |Execution failed" build.log \
+            | head -80 | sed 's/%/%25/g; s/\r//g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Build failed::${MSG}"
 
       - name: Check APK size (hard cap 15 MB)
         run: |
