@@ -41,6 +41,14 @@
             android:textSize="14sp"
             android:visibility="gone" />
 
+        <!-- How many app slots the home screen shows: Left/Right (or OK) changes it. -->
+        <TextView
+            android:id="@+id/slot_count"
+            style="@style/TileButton"
+            android:layout_width="match_parent"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical|start" />
+
         <!-- Which DNS WorldTV's own connections use. OK cycles through the options. -->
         <TextView
             android:id="@+id/dns"

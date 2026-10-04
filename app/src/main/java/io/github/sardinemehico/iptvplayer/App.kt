@@ -95,6 +95,11 @@ class AppGraph(private val app: Application) {
 
 /** Small settings and "last used" state. */
 class Prefs(private val sp: SharedPreferences) {
+
+    companion object {
+        const val MIN_SLOTS = 2
+        const val MAX_SLOTS = 14
+    }
     var activePlaylist: Long
         get() = sp.getLong("active_playlist", -1)
         set(v) = sp.edit().putLong("active_playlist", v).apply()
@@ -122,7 +127,21 @@ class Prefs(private val sp: SharedPreferences) {
         get() = sp.getBoolean("last_boot_allowed", false)
         set(v) = sp.edit().putBoolean("last_boot_allowed", v).apply()
 
-    /** Package shown in home-screen app slot [index] (0..4), or null if the slot is empty. */
+    /**
+     * How many app slots the home screen shows (2..14; 5 fit in the second row, the rest go to
+     * a third). New installs get 2. An update from a version without this setting keeps every
+     * slot that already holds an app (up to 5), so nobody's apps disappear.
+     */
+    var appSlotCount: Int
+        get() {
+            val stored = sp.getInt("app_slot_count", -1)
+            if (stored != -1) return stored.coerceIn(MIN_SLOTS, MAX_SLOTS)
+            val highestUsed = (0 until 5).lastOrNull { appSlot(it) != null } ?: -1
+            return (highestUsed + 1).coerceIn(MIN_SLOTS, 5).also { appSlotCount = it }
+        }
+        set(v) = sp.edit().putInt("app_slot_count", v.coerceIn(MIN_SLOTS, MAX_SLOTS)).apply()
+
+    /** Package shown in home-screen app slot [index] (0..13), or null if the slot is empty. */
     fun appSlot(index: Int): String? = sp.getString("app_slot_$index", null)
 
     fun setAppSlot(index: Int, pkg: String?) = sp.edit().putString("app_slot_$index", pkg).apply()

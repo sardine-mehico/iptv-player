@@ -13,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.sardinemehico.iptvplayer.MainActivity
 import io.github.sardinemehico.iptvplayer.R
+import io.github.sardinemehico.iptvplayer.Prefs
 import io.github.sardinemehico.iptvplayer.data.net.AppDns
 import io.github.sardinemehico.iptvplayer.data.repo.Pin
 import io.github.sardinemehico.iptvplayer.data.repo.Playlist
@@ -36,6 +37,25 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
     init {
         add.setOnClickListener { activity.push(AddPlaylistScreen(activity)) }
         autoStart.setOnClickListener { toggleAutoStart() }
+        val slotCount = root.findViewById<TextView>(R.id.slot_count)
+        fun showSlotCount() { slotCount.text = activity.getString(R.string.slot_count, graph.prefs.appSlotCount) }
+        fun changeSlots(delta: Int, wrap: Boolean) {
+            var n = graph.prefs.appSlotCount + delta
+            if (n > Prefs.MAX_SLOTS) n = if (wrap) Prefs.MIN_SLOTS else Prefs.MAX_SLOTS
+            if (n < Prefs.MIN_SLOTS) n = Prefs.MIN_SLOTS
+            graph.prefs.appSlotCount = n
+            showSlotCount()
+        }
+        slotCount.setOnClickListener { changeSlots(+1, wrap = true) }
+        slotCount.setOnKeyListener { _, keyCode, event ->
+            if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+            when (keyCode) {
+                KeyEvent.KEYCODE_DPAD_LEFT -> { changeSlots(-1, wrap = false); true }
+                KeyEvent.KEYCODE_DPAD_RIGHT -> { changeSlots(+1, wrap = false); true }
+                else -> false
+            }
+        }
+        showSlotCount()
         val dns = root.findViewById<TextView>(R.id.dns)
         fun showDns() = dns.setText(
             when (graph.prefs.dnsMode) {

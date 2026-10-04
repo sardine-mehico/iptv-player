@@ -90,8 +90,8 @@
     <string name="add_app">Add app</string>
     <string name="choose_app">Choose an app</string>
     <string name="all_apps">All apps</string>
-    <string name="android_settings">Android settings</string>
-    <string name="android_settings_short">Settings</string>
+    <string name="android_settings">System settings</string>
+    <string name="android_settings_short">System settings</string>
     <string name="app_missing">That app is not installed</string>
     <string name="slot_change">Change app</string>
     <string name="slot_remove">Remove from home screen</string>
@@ -111,4 +111,6 @@
     <string name="home_is_default">WorldTV is the Home screen ✓</string>
     <string name="home_pick_worldtv">Choose WorldTV as the Home app</string>
     <string name="home_no_setting">This box has no Home app setting. Look for “Default apps” or “Launcher” in its settings.</string>
+
+    <string name="slot_count">Home screen app slots: ‹ %1$d ›   (Left / Right to change)</string>
 </resources>

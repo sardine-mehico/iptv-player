@@ -81,85 +81,23 @@
             android:text="@string/series" />
     </LinearLayout>
 
-    <!-- Second row: five app slots the user fills (like Android TV's favourite apps), then
-         Reload playlist, App Settings, All apps and Android Settings. All the same size. -->
+    <!-- Second (and optional third) row, built in HomeScreen: 9 equal columns. App slots fill
+         from the left; Reload playlist, App Settings, All apps and System settings always take
+         columns 6-9 of the second row. Slots beyond 5 continue on the third row. -->
     <LinearLayout
+        android:id="@+id/home_row2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="28dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal" />
 
-        <include
-            android:id="@+id/app_slot_0"
-            layout="@layout/row_app_slot"
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_weight="1" />
-
-        <include
-            android:id="@+id/app_slot_1"
-            layout="@layout/row_app_slot"
-            android:layout_marginStart="12dp"
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_weight="1" />
-
-        <include
-            android:id="@+id/app_slot_2"
-            layout="@layout/row_app_slot"
-            android:layout_marginStart="12dp"
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_weight="1" />
-
-        <include
-            android:id="@+id/app_slot_3"
-            layout="@layout/row_app_slot"
-            android:layout_marginStart="12dp"
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_weight="1" />
-
-        <include
-            android:id="@+id/app_slot_4"
-            layout="@layout/row_app_slot"
-            android:layout_marginStart="12dp"
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_weight="1" />
-
-        <include
-            android:id="@+id/tile_reload"
-            layout="@layout/row_app_slot"
-            android:layout_marginStart="12dp"
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_weight="1" />
-
-        <include
-            android:id="@+id/tile_settings"
-            layout="@layout/row_app_slot"
-            android:layout_marginStart="12dp"
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_weight="1" />
-
-        <include
-            android:id="@+id/tile_all_apps"
-            layout="@layout/row_app_slot"
-            android:layout_marginStart="12dp"
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_weight="1" />
-
-        <include
-            android:id="@+id/tile_android_settings"
-            layout="@layout/row_app_slot"
-            android:layout_marginStart="12dp"
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_weight="1" />
-    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/home_row3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal"
+        android:visibility="gone" />
     </LinearLayout>
 
     <TextView
