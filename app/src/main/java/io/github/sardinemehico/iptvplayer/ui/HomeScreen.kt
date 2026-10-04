@@ -19,9 +19,10 @@ import java.text.DateFormat
 import java.util.Date
 
 /**
- * Live TV · Movies · Series on top. Below, rows of 5: the user's app slots (2..14, set in App
- * Settings), then Reload playlist, App Settings, All apps and System settings on their own row
- * after the last app row. The big tiles shrink to fit; extra rows scroll into view on focus.
+ * Live TV · Movies · Series on top. Below, rows of 5: the first holds the user's first app and,
+ * always on the right, Reload playlist, App Settings, All apps and System settings; more apps
+ * (1..14 slots, set in App Settings) continue in rows of 5 underneath. The big tiles shrink to
+ * fit; extra rows scroll into view on focus.
  * WorldTV can be the box's launcher, so focus comes back to the tile the user left from.
  */
 class HomeScreen(activity: MainActivity) : Screen(activity) {
@@ -91,27 +92,29 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
         builtCount = count
         rows.removeAllViews()
         val list = ArrayList<View>()
-        val appRows = (count + COLUMNS - 1) / COLUMNS
-        for (r in 0 until appRows) {
-            val row = newRow(r)
+        // First row: the user's first app, then the four fixed tiles, always on the right.
+        val first = newRow(0)
+        list += addSlot(first, 0, 0)
+        addFixed(first, 1, "reload", R.drawable.ic_refresh, R.string.reload_playlist) { reloadPlaylist() }
+        addFixed(first, 2, "settings", R.drawable.ic_settings_small, R.string.settings) { activity.push(PlaylistsScreen(activity)) }
+        addFixed(first, 3, "allapps", R.drawable.ic_all_apps, R.string.all_apps) { showAllApps() }
+        addFixed(first, 4, "system", R.drawable.ic_android_settings, R.string.android_settings_short) { Apps.openAndroidSettings(activity) }
+        // Any more apps: rows of 5 underneath.
+        val more = count - 1
+        val moreRows = (more + COLUMNS - 1) / COLUMNS
+        for (r in 0 until moreRows) {
+            val row = newRow(r + 1)
             for (col in 0 until COLUMNS) {
-                val index = r * COLUMNS + col
+                val index = 1 + r * COLUMNS + col
                 if (index < count) list += addSlot(row, col, index) else addSpace(row, col)
             }
         }
-        val fixed = newRow(appRows)
-        addFixed(fixed, 0, "reload", R.drawable.ic_refresh, R.string.reload_playlist) { reloadPlaylist() }
-        addFixed(fixed, 1, "settings", R.drawable.ic_settings_small, R.string.settings) { activity.push(PlaylistsScreen(activity)) }
-        addFixed(fixed, 2, "allapps", R.drawable.ic_all_apps, R.string.all_apps) { showAllApps() }
-        addFixed(fixed, 3, "system", R.drawable.ic_android_settings, R.string.android_settings_short) { Apps.openAndroidSettings(activity) }
-        addSpace(fixed, 4)
         slots = list
         slotApps = emptyList() // filled by showSlots()
 
         // Down from any big tile goes to the first app slot, not the one under it.
-        val first = slots.first()
-        bigTiles.forEach { it.nextFocusDownId = first.id }
-        fitBigTiles(appRows + 1)
+        bigTiles.forEach { it.nextFocusDownId = list.first().id }
+        fitBigTiles(1 + moreRows)
     }
 
     private fun newRow(index: Int): LinearLayout {

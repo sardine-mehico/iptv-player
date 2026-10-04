@@ -91,8 +91,8 @@
                 android:text="@string/series" />
         </LinearLayout>
 
-        <!-- Rows of 5: the user's app slots, then Reload playlist, App Settings, All apps and
-             System settings on their own row after the last app row. -->
+        <!-- Rows of 5: first the user's first app + Reload playlist, App Settings, All apps and
+             System settings (always on the right); more apps in rows of 5 below. -->
         <LinearLayout
             android:id="@+id/home_rows"
             android:layout_width="match_parent"
