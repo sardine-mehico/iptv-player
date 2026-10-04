@@ -46,59 +46,61 @@
             android:ellipsize="end" />
     </LinearLayout>
 
-    <!-- Big tiles, then the app slots, centred in the space left. -->
-    <LinearLayout
+    <!-- Big tiles, then the rows below them (built in HomeScreen), centred in the space left.
+         Scrolls only when there are more rows than the screen can show; focus brings them in. -->
+    <ScrollView
+        android:id="@+id/home_scroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/tile_live"
-            style="@style/HomeTile"
-            android:drawableTop="@drawable/ic_live_tv"
-            android:text="@string/live_tv" />
+            <TextView
+                android:id="@+id/tile_live"
+                style="@style/HomeTile"
+                android:drawableTop="@drawable/ic_live_tv"
+                android:text="@string/live_tv" />
 
-        <TextView
-            android:id="@+id/tile_movies"
-            style="@style/HomeTile"
-            android:layout_marginStart="20dp"
-            android:drawableTop="@drawable/ic_movies"
-            android:text="@string/movies" />
+            <TextView
+                android:id="@+id/tile_movies"
+                style="@style/HomeTile"
+                android:layout_marginStart="20dp"
+                android:drawableTop="@drawable/ic_movies"
+                android:text="@string/movies" />
 
-        <TextView
-            android:id="@+id/tile_series"
-            style="@style/HomeTile"
-            android:layout_marginStart="20dp"
-            android:drawableTop="@drawable/ic_series"
-            android:text="@string/series" />
+            <TextView
+                android:id="@+id/tile_series"
+                style="@style/HomeTile"
+                android:layout_marginStart="20dp"
+                android:drawableTop="@drawable/ic_series"
+                android:text="@string/series" />
+        </LinearLayout>
+
+        <!-- Rows of 5: the user's app slots, then Reload playlist, App Settings, All apps and
+             System settings on their own row after the last app row. -->
+        <LinearLayout
+            android:id="@+id/home_rows"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:orientation="vertical" />
     </LinearLayout>
-
-    <!-- Second (and optional third) row, built in HomeScreen: 9 equal columns. App slots fill
-         from the left; Reload playlist, App Settings, All apps and System settings always take
-         columns 6-9 of the second row. Slots beyond 5 continue on the third row. -->
-    <LinearLayout
-        android:id="@+id/home_row2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
-        android:orientation="horizontal" />
-
-    <LinearLayout
-        android:id="@+id/home_row3"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:orientation="horizontal"
-        android:visibility="gone" />
-    </LinearLayout>
+    </ScrollView>
 
     <TextView
         android:id="@+id/version"

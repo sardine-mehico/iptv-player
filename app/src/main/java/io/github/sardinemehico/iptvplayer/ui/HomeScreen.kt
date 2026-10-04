@@ -18,9 +18,9 @@ import java.text.DateFormat
 import java.util.Date
 
 /**
- * Live TV · Movies · Series on top. Below, a 9-column grid: the user's app slots (2..14, set in
- * App Settings) fill from the left, and Reload playlist, App Settings, All apps and System
- * settings always sit in columns 6-9 of the second row; slots beyond 5 go to a third row.
+ * Live TV · Movies · Series on top. Below, rows of 5: the user's app slots (2..14, set in App
+ * Settings), then Reload playlist, App Settings, All apps and System settings on their own row
+ * after the last app row. The big tiles shrink to fit; extra rows scroll into view on focus.
  * WorldTV can be the box's launcher, so focus comes back to the tile the user left from.
  */
 class HomeScreen(activity: MainActivity) : Screen(activity) {
@@ -29,8 +29,8 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
     private val account: TextView = root.findViewById(R.id.account)
     private val live: View = root.findViewById(R.id.tile_live)
     private val bigTiles: List<View> = listOf(live, root.findViewById(R.id.tile_movies), root.findViewById(R.id.tile_series))
-    private val row2: LinearLayout = root.findViewById(R.id.home_row2)
-    private val row3: LinearLayout = root.findViewById(R.id.home_row3)
+    private val rows: LinearLayout = root.findViewById(R.id.home_rows)
+    private val scroll: View = root.findViewById(R.id.home_scroll)
     private val busy: View = root.findViewById(R.id.busy)
     private val reloadStatus: TextView = root.findViewById(R.id.reload_status)
     private var reloading = false
@@ -81,43 +81,60 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
 
     private fun buildRows(count: Int) {
         builtCount = count
-        row2.removeAllViews()
-        row3.removeAllViews()
-        val inRow2 = minOf(count, ROW2_SLOTS)
+        rows.removeAllViews()
         val list = ArrayList<View>()
-        for (col in 0 until ROW2_SLOTS) {
-            if (col < inRow2) list += addSlot(row2, col, col) else addSpace(row2, col)
-        }
-        addFixed(row2, ROW2_SLOTS, "reload", R.drawable.ic_refresh, R.string.reload_playlist) { reloadPlaylist() }
-        addFixed(row2, ROW2_SLOTS + 1, "settings", R.drawable.ic_settings_small, R.string.settings) { activity.push(PlaylistsScreen(activity)) }
-        addFixed(row2, ROW2_SLOTS + 2, "allapps", R.drawable.ic_all_apps, R.string.all_apps) { showAllApps() }
-        addFixed(row2, ROW2_SLOTS + 3, "system", R.drawable.ic_android_settings, R.string.android_settings_short) { Apps.openAndroidSettings(activity) }
-        val extra = count - inRow2
-        if (extra > 0) {
+        val appRows = (count + COLUMNS - 1) / COLUMNS
+        for (r in 0 until appRows) {
+            val row = newRow(r)
             for (col in 0 until COLUMNS) {
-                if (col < extra) list += addSlot(row3, col, ROW2_SLOTS + col) else addSpace(row3, col)
+                val index = r * COLUMNS + col
+                if (index < count) list += addSlot(row, col, index) else addSpace(row, col)
             }
         }
-        row3.visibility = if (extra > 0) View.VISIBLE else View.GONE
+        val fixed = newRow(appRows)
+        addFixed(fixed, 0, "reload", R.drawable.ic_refresh, R.string.reload_playlist) { reloadPlaylist() }
+        addFixed(fixed, 1, "settings", R.drawable.ic_settings_small, R.string.settings) { activity.push(PlaylistsScreen(activity)) }
+        addFixed(fixed, 2, "allapps", R.drawable.ic_all_apps, R.string.all_apps) { showAllApps() }
+        addFixed(fixed, 3, "system", R.drawable.ic_android_settings, R.string.android_settings_short) { Apps.openAndroidSettings(activity) }
+        addSpace(fixed, 4)
         slots = list
         slotApps = emptyList() // filled by showSlots()
 
-        // A third row needs room: big tiles get shorter so all three rows fit on 540dp screens.
-        val density = activity.resources.displayMetrics.density
-        val bigHeight = ((if (extra > 0) 190 else 250) * density).toInt()
-        val bigTop = ((if (extra > 0) 22 else 44) * density).toInt() // keeps icon + label centred when shorter
-        bigTiles.forEach {
-            it.layoutParams = it.layoutParams.apply { height = bigHeight }
-            it.setPadding(it.paddingLeft, bigTop, it.paddingRight, it.paddingBottom)
-        }
-        (row2.layoutParams as ViewGroup.MarginLayoutParams).topMargin = ((if (extra > 0) 20 else 28) * density).toInt()
         // Down from any big tile goes to the first app slot, not the one under it.
         val first = slots.first()
         bigTiles.forEach { it.nextFocusDownId = first.id }
+        fitBigTiles(appRows + 1)
     }
 
-    private fun cellParams(col: Int) = LinearLayout.LayoutParams(0, (76 * activity.resources.displayMetrics.density).toInt(), 1f).apply {
-        if (col > 0) marginStart = (12 * activity.resources.displayMetrics.density).toInt()
+    private fun newRow(index: Int): LinearLayout {
+        val row = LinearLayout(activity)
+        row.orientation = LinearLayout.HORIZONTAL
+        val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        if (index > 0) lp.topMargin = dp(ROW_GAP)
+        rows.addView(row, lp)
+        return row
+    }
+
+    /**
+     * Big tiles take what's left after the rows: 250dp when there is room, down to 170dp. Only if
+     * even that doesn't fit (small screens with many slots) does the area scroll.
+     */
+    private fun fitBigTiles(rowCount: Int) {
+        scroll.post {
+            val rowsHeight = rowCount * dp(CELL_HEIGHT) + (rowCount - 1) * dp(ROW_GAP) + dp(24 + 16)
+            val target = (scroll.height - rowsHeight).coerceIn(dp(170), dp(250))
+            val top = if (target < dp(220)) dp(20) else dp(44) // keeps icon + label centred
+            bigTiles.forEach {
+                it.layoutParams = it.layoutParams.apply { height = target }
+                it.setPadding(it.paddingLeft, top, it.paddingRight, it.paddingBottom)
+            }
+        }
+    }
+
+    private fun dp(v: Int) = (v * activity.resources.displayMetrics.density).toInt()
+
+    private fun cellParams(col: Int) = LinearLayout.LayoutParams(0, dp(CELL_HEIGHT), 1f).apply {
+        if (col > 0) marginStart = dp(14)
     }
 
     private fun addSpace(row: LinearLayout, col: Int) {
@@ -283,7 +300,8 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
     }
 
     private companion object {
-        const val COLUMNS = 9
-        const val ROW2_SLOTS = 5
+        const val COLUMNS = 5
+        const val CELL_HEIGHT = 80
+        const val ROW_GAP = 12
     }
 }
