@@ -63,13 +63,14 @@ class CategoryAdapter(
 }
 
 /**
- * Channel list backed by SQLite pages of [PAGE] rows. Only a few pages stay in memory, so a
+ * Channel list (or, with [layout] = row_poster, a movie/series poster grid) backed by SQLite pages of [PAGE] rows. Only a few pages stay in memory, so a
  * 50,000-channel "All" list costs the same as a 50-channel one. Rows not loaded yet show a
  * placeholder and fill in when their page arrives; the UI thread never waits.
  */
 class PagedEntryAdapter(
     private val scope: CoroutineScope,
     private val onClicked: (Int, EntryRow) -> Unit,
+    private val layout: Int = R.layout.row_channel,
 ) : RecyclerView.Adapter<PagedEntryAdapter.VH>() {
 
     private var loader: (suspend (offset: Int, limit: Int) -> List<EntryRow>)? = null
@@ -113,7 +114,7 @@ class PagedEntryAdapter(
     override fun getItemId(position: Int) = position.toLong()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH =
-        VH(LayoutInflater.from(parent.context).inflate(R.layout.row_channel, parent, false))
+        VH(LayoutInflater.from(parent.context).inflate(layout, parent, false))
 
     override fun onBindViewHolder(holder: VH, position: Int, payloads: MutableList<Any>) {
         if (payloads.isNotEmpty() && payloads.all { it == PAYLOAD_STATE }) {
@@ -124,18 +125,18 @@ class PagedEntryAdapter(
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        holder.num.text = (position + 1).toString()
+        holder.num?.text = (position + 1).toString()
         val row = rowAt(position)
         if (row == null) {
             holder.name.text = ""
-            holder.fav.visibility = View.GONE
+            holder.fav?.visibility = View.GONE
             holder.logo.load(null)
             holder.itemView.isActivated = false
             request(position / PAGE)
             return
         }
         holder.name.text = row.name
-        holder.fav.visibility = if (row.favourite) View.VISIBLE else View.GONE
+        holder.fav?.visibility = if (row.favourite) View.VISIBLE else View.GONE
         holder.logo.load(row.logo)
         holder.itemView.isActivated = row.itemId == playingItemId
     }
@@ -169,10 +170,10 @@ class PagedEntryAdapter(
     }
 
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {
-        val num: TextView = view.findViewById(R.id.num)
+        val num: TextView? = view.findViewById(R.id.num)
         val logo: ImageView = view.findViewById(R.id.logo)
         val name: TextView = view.findViewById(R.id.name)
-        val fav: TextView = view.findViewById(R.id.fav)
+        val fav: TextView? = view.findViewById(R.id.fav)
 
         init {
             view.setOnClickListener {

@@ -22,8 +22,11 @@ data class Playlist(
     val formats: List<String>,
     val serverTz: String?,
     val status: String?,
+    /** Salted hash of the playlist's 6-digit PIN, or null if it has none. See [Pin]. */
+    val pinHash: String?,
 ) {
     val isXtream get() = kind == KIND_XTREAM
+    val hasPin get() = pinHash != null
 
     companion object {
         const val KIND_XTREAM = "xtream"
@@ -43,6 +46,9 @@ data class EntryRow(
     val catchupDays: Int,
     val favourite: Boolean,
 )
+
+/** The stored fields a movie or series page shows before (or without) the panel's info call. */
+data class EntryDetails(val rating: String?, val plot: String?, val ext: String?)
 
 /**
  * All database reads and writes. Every call runs on [io]; nothing here may be called
@@ -66,17 +72,30 @@ class Repository(private val db: Db, private val io: CoroutineDispatcher) {
         }
     }
 
-    suspend fun addPlaylist(name: String, kind: String, url: String, username: String?, password: String?): Long =
-        withContext(io) {
-            val v = ContentValues().apply {
-                put("name", name)
-                put("kind", kind)
-                put("url", url)
-                put("username", username)
-                put("password", password)
-            }
-            db.writableDatabase.insertOrThrow("playlist", null, v)
+    suspend fun addPlaylist(
+        name: String,
+        kind: String,
+        url: String,
+        username: String?,
+        password: String?,
+        pinHash: String? = null,
+    ): Long = withContext(io) {
+        val v = ContentValues().apply {
+            put("name", name)
+            put("kind", kind)
+            put("url", url)
+            put("username", username)
+            put("password", password)
+            put("pin_hash", pinHash)
         }
+        db.writableDatabase.insertOrThrow("playlist", null, v)
+    }
+
+    /** Sets or (with null) removes a playlist's PIN. */
+    suspend fun setPin(id: Long, pinHash: String?) = withContext(io) {
+        val v = ContentValues().apply { put("pin_hash", pinHash) }
+        db.writableDatabase.update("playlist", v, "id = ?", arrayOf(id.toString()))
+    }
 
     suspend fun deletePlaylist(id: Long) = withContext(io) {
         val w = db.writableDatabase
@@ -172,6 +191,20 @@ class Repository(private val db: Db, private val io: CoroutineDispatcher) {
         }
     }
 
+    suspend fun details(playlistId: Long, type: ContentType, itemId: String): EntryDetails? = withContext(io) {
+        db.readableDatabase.rawQuery(
+            "SELECT rating, plot, ext FROM entry WHERE playlist_id = ? AND type = ? AND item_id = ?",
+            arrayOf(playlistId.toString(), type.ordinal.toString(), itemId),
+        ).use { c -> if (c.moveToFirst()) EntryDetails(c.getStringOrNull(0), c.getStringOrNull(1), c.getStringOrNull(2)) else null }
+    }
+
+    suspend fun isFavourite(playlistId: Long, type: ContentType, itemId: String): Boolean = withContext(io) {
+        db.readableDatabase.rawQuery(
+            "SELECT 1 FROM favourite WHERE playlist_id = ? AND type = ? AND item_id = ?",
+            arrayOf(playlistId.toString(), type.ordinal.toString(), itemId),
+        ).use { it.moveToFirst() }
+    }
+
     /** Toggles a favourite and returns the new state. */
     suspend fun toggleFavourite(playlistId: Long, type: ContentType, itemId: String): Boolean = withContext(io) {
         val w = db.writableDatabase
@@ -219,6 +252,7 @@ class Repository(private val db: Db, private val io: CoroutineDispatcher) {
             formats = s("formats")?.split(',')?.filter { it.isNotBlank() }.orEmpty(),
             serverTz = s("server_tz"),
             status = s("status"),
+            pinHash = s("pin_hash"),
         )
     }
 

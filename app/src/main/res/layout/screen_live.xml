@@ -155,6 +155,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp" />
+
+        <!-- Player controls: Left/Right to move, OK to press. Up/Down still change channel. -->
+        <LinearLayout
+            android:id="@+id/controls"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
+
+            <TextView android:id="@+id/ctl_prev" style="@style/ControlButton" android:text="@string/ctl_prev" />
+            <TextView android:id="@+id/ctl_pause" style="@style/ControlButton" android:text="@string/ctl_pause" />
+            <TextView android:id="@+id/ctl_next" style="@style/ControlButton" android:text="@string/ctl_next" />
+            <TextView android:id="@+id/ctl_audio" style="@style/ControlButton" android:text="@string/ctl_audio" />
+            <TextView android:id="@+id/ctl_subs" style="@style/ControlButton" android:text="@string/ctl_subs" />
+            <TextView android:id="@+id/ctl_aspect" style="@style/ControlButton" android:text="@string/ctl_aspect_fit" />
+            <TextView android:id="@+id/ctl_fav" style="@style/ControlButton" android:text="@string/ctl_fav_add" />
+        </LinearLayout>
     </LinearLayout>
 
     <TextView

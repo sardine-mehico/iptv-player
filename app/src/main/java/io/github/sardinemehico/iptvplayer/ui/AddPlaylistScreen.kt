@@ -5,6 +5,7 @@ import android.widget.EditText
 import android.widget.TextView
 import io.github.sardinemehico.iptvplayer.MainActivity
 import io.github.sardinemehico.iptvplayer.R
+import io.github.sardinemehico.iptvplayer.data.repo.Pin
 import io.github.sardinemehico.iptvplayer.data.repo.Playlist
 import io.github.sardinemehico.iptvplayer.data.source.XtreamCredentials
 import kotlinx.coroutines.CancellationException
@@ -22,7 +23,9 @@ class AddPlaylistScreen(activity: MainActivity, private val firstRun: Boolean = 
     private val username: EditText = root.findViewById(R.id.username)
     private val password: EditText = root.findViewById(R.id.password)
     private val m3uUrl: EditText = root.findViewById(R.id.m3u_url)
+    private val pin: EditText = root.findViewById(R.id.pin)
     private val message: TextView = root.findViewById(R.id.message)
+    private val busyDots: View = root.findViewById(R.id.busy)
     private val save: TextView = root.findViewById(R.id.save)
 
     private var xtream = true
@@ -62,6 +65,9 @@ class AddPlaylistScreen(activity: MainActivity, private val firstRun: Boolean = 
         var user = username.text.toString().trim()
         var pass = password.text.toString().trim()
         val m3u = m3uUrl.text.toString().trim()
+        val pinText = pin.text.toString().trim()
+        if (pinText.isNotEmpty() && !Pin.isValid(pinText)) return showError("The PIN must be exactly 6 digits.")
+        val pinHash = if (pinText.isEmpty()) null else Pin.hash(pinText)
 
         if (!useXtream) {
             if (m3u.isEmpty()) return showError("Enter the M3U URL.")
@@ -76,8 +82,7 @@ class AddPlaylistScreen(activity: MainActivity, private val firstRun: Boolean = 
             return showError("Enter the server URL, username and password.")
         }
 
-        busy = true
-        save.isEnabled = false
+        setBusy(true)
         val progress: (String) -> Unit = { text -> activity.runOnUiThread { showInfo(text) } }
 
         scope.launch {
@@ -88,9 +93,9 @@ class AddPlaylistScreen(activity: MainActivity, private val firstRun: Boolean = 
                     val creds = XtreamCredentials(serverUrl, user, pass)
                     progress("Signing in…")
                     graph.syncer.login(creds)
-                    createdId = repo.addPlaylist(title, Playlist.KIND_XTREAM, creds.baseUrl, user, pass)
+                    createdId = repo.addPlaylist(title, Playlist.KIND_XTREAM, creds.baseUrl, user, pass, pinHash)
                 } else {
-                    createdId = repo.addPlaylist(title, Playlist.KIND_M3U, m3u, null, null)
+                    createdId = repo.addPlaylist(title, Playlist.KIND_M3U, m3u, null, null, pinHash)
                 }
                 val playlist = repo.playlist(createdId) ?: error("Playlist not saved")
                 graph.syncer.sync(playlist, progress)
@@ -100,11 +105,19 @@ class AddPlaylistScreen(activity: MainActivity, private val firstRun: Boolean = 
                 throw e
             } catch (e: Exception) {
                 if (createdId > 0) graph.repo.deletePlaylist(createdId)
+                setBusy(false)
                 showError(e.message ?: "Could not load the playlist.")
-                busy = false
-                save.isEnabled = true
             }
         }
+    }
+
+    /** While loading: dots animate, the form is locked so a stray OK can't edit or resubmit it. */
+    private fun setBusy(on: Boolean) {
+        busy = on
+        busyDots.visibility = if (on) View.VISIBLE else View.GONE
+        for (v in listOf(modeXtream, modeM3u, name, server, username, password, m3uUrl, pin, save)) v.isEnabled = !on
+        save.setText(if (on) R.string.loading else R.string.save_and_load)
+        if (on) save.requestFocus()
     }
 
     private fun showError(text: String) {

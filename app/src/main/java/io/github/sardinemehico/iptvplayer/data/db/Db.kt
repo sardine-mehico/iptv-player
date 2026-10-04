@@ -30,7 +30,8 @@ class Db(context: Context) : SQLiteOpenHelper(context, "iptv.db", null, VERSION)
                 max_connections INTEGER NOT NULL DEFAULT 0,
                 formats TEXT,
                 server_tz TEXT,
-                status TEXT
+                status TEXT,
+                pin_hash TEXT
             )""",
         )
         db.execSQL(
@@ -75,9 +76,11 @@ class Db(context: Context) : SQLiteOpenHelper(context, "iptv.db", null, VERSION)
         )
     }
 
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        if (oldVersion < 2) db.execSQL("ALTER TABLE playlist ADD COLUMN pin_hash TEXT")
+    }
 
     companion object {
-        const val VERSION = 1
+        const val VERSION = 2
     }
 }

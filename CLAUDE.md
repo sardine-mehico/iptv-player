@@ -4,7 +4,9 @@ IPTV player for low-spec Android TV boxes, modelled on IBO Player Pro.
 MVP document: https://claude.ai/code/artifact/f7b3b895-aef4-4a3d-9555-9848fd1bd09e
 
 ## Product rules
-- **IBO parity:** if IBO Player Pro doesn't have a feature, don't build it. The one exception is auto-start on boot.
+- **IBO parity:** if IBO Player Pro doesn't have a feature, don't build it. Exceptions: auto-start on boot, and an
+  optional 6-digit PIN per playlist that guards its details (URL, username, password) and deletion. That PIN is
+  not a parental lock: it never gates watching.
 - **Not built:** cloud/website playlist management, activation/licensing, parental PIN, hidden categories,
   recent-channels list, multi-screen, recording, Stalker portals, PiP, USB playlist files, number-key zap.
 - No built-in content, playlists or provider links, ever.

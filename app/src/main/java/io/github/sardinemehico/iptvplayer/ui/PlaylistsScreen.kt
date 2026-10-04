@@ -9,6 +9,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.sardinemehico.iptvplayer.MainActivity
 import io.github.sardinemehico.iptvplayer.R
+import io.github.sardinemehico.iptvplayer.data.repo.Pin
 import io.github.sardinemehico.iptvplayer.data.repo.Playlist
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -20,6 +21,7 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
     private val list: LinearLayout = root.findViewById(R.id.list)
     private val add: TextView = root.findViewById(R.id.add)
     private val message: TextView = root.findViewById(R.id.message)
+    private val busyDots: View = root.findViewById(R.id.busy)
     private var busy = false
 
     init {
@@ -47,7 +49,8 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
     private fun row(p: Playlist, active: Boolean): View {
         val v = LayoutInflater.from(activity).inflate(R.layout.row_text, list, false) as TextView
         val kind = if (p.isXtream) "Xtream" else "M3U"
-        v.text = if (active) "${p.name}  ·  $kind  ·  active" else "${p.name}  ·  $kind"
+        val lock = if (p.hasPin) "  ·  PIN" else ""
+        v.text = if (active) "${p.name}  ·  $kind$lock  ·  active" else "${p.name}  ·  $kind$lock"
         v.setOnClickListener { open(p) }
         v.setOnLongClickListener { actions(p); true }
         v.setOnKeyListener { _, keyCode, event ->
@@ -74,6 +77,7 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
         val labels = arrayOf(
             activity.getString(R.string.action_open),
             activity.getString(R.string.action_refresh),
+            activity.getString(R.string.action_details),
             activity.getString(R.string.action_delete),
         )
         AlertDialog.Builder(activity)
@@ -82,7 +86,8 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
                 when (which) {
                     0 -> open(p)
                     1 -> refresh(p)
-                    2 -> delete(p)
+                    2 -> PinPrompt.require(activity, p) { details(p) }
+                    3 -> PinPrompt.require(activity, p) { delete(p) }
                 }
             }
             .show()
@@ -90,6 +95,8 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
 
     private fun refresh(p: Playlist) {
         busy = true
+        busyDots.visibility = View.VISIBLE
+        message.setTextColor(activity.getColor(R.color.text_secondary))
         scope.launch {
             try {
                 graph.syncer.sync(p) { text -> activity.runOnUiThread { message.text = text } }
@@ -101,6 +108,32 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
                 message.text = e.message ?: "Refresh failed"
             } finally {
                 busy = false
+                busyDots.visibility = View.GONE
+            }
+        }
+    }
+
+    /** Server, login and URL. Reached only through [PinPrompt] when the playlist has a PIN. */
+    private fun details(p: Playlist) {
+        val lines = if (p.isXtream) {
+            listOf("Type: Xtream Codes", "Server: ${p.url}", "Username: ${p.username.orEmpty()}", "Password: ${p.password.orEmpty()}")
+        } else {
+            listOf("Type: M3U", "URL: ${p.url}")
+        }
+        AlertDialog.Builder(activity)
+            .setTitle(p.name)
+            .setMessage(lines.joinToString("\n"))
+            .setPositiveButton(android.R.string.ok, null)
+            .setNeutralButton(if (p.hasPin) R.string.pin_change else R.string.pin_set) { _, _ -> changePin(p) }
+            .show()
+    }
+
+    private fun changePin(p: Playlist) {
+        PinPrompt.askNew(activity, canRemove = p.hasPin) { pin ->
+            scope.launch {
+                graph.repo.setPin(p.id, pin?.let { Pin.hash(it) })
+                activity.toast(activity.getString(if (pin == null) R.string.pin_removed else R.string.pin_saved))
+                reload()
             }
         }
     }

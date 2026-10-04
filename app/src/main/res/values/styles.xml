@@ -40,4 +40,27 @@
         <item name="android:textSize">18sp</item>
         <item name="android:stateListAnimator">@null</item>
     </style>
+
+    <!-- Full-screen player buttons: flat, compact, focus shown by the tile border. -->
+    <style name="ControlButton" parent="TileButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:layout_marginEnd">10dp</item>
+        <item name="android:minWidth">88dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <!-- Home menu tile: icon above label, one flat view. -->
+    <style name="HomeTile" parent="TileButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">180dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:drawablePadding">14dp</item>
+        <item name="android:drawableTint">@color/text_primary</item>
+        <item name="android:paddingTop">28dp</item>
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:textSize">22sp</item>
+    </style>
 </resources>

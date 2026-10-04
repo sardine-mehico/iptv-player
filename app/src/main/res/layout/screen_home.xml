@@ -30,41 +30,29 @@
 
         <TextView
             android:id="@+id/tile_live"
-            style="@style/TileButton"
-            android:layout_width="0dp"
-            android:layout_height="160dp"
-            android:layout_weight="1"
-            android:text="@string/live_tv"
-            android:textSize="24sp" />
+            style="@style/HomeTile"
+            android:drawableTop="@drawable/ic_live_tv"
+            android:text="@string/live_tv" />
 
         <TextView
             android:id="@+id/tile_movies"
-            style="@style/TileButton"
-            android:layout_width="0dp"
-            android:layout_height="160dp"
+            style="@style/HomeTile"
             android:layout_marginStart="20dp"
-            android:layout_weight="1"
-            android:text="@string/movies"
-            android:textSize="24sp" />
+            android:drawableTop="@drawable/ic_movies"
+            android:text="@string/movies" />
 
         <TextView
             android:id="@+id/tile_series"
-            style="@style/TileButton"
-            android:layout_width="0dp"
-            android:layout_height="160dp"
+            style="@style/HomeTile"
             android:layout_marginStart="20dp"
-            android:layout_weight="1"
-            android:text="@string/series"
-            android:textSize="24sp" />
+            android:drawableTop="@drawable/ic_series"
+            android:text="@string/series" />
 
         <TextView
-            android:id="@+id/tile_playlists"
-            style="@style/TileButton"
-            android:layout_width="0dp"
-            android:layout_height="160dp"
+            android:id="@+id/tile_settings"
+            style="@style/HomeTile"
             android:layout_marginStart="20dp"
-            android:layout_weight="1"
-            android:text="@string/playlists"
-            android:textSize="24sp" />
+            android:drawableTop="@drawable/ic_settings"
+            android:text="@string/settings" />
     </LinearLayout>
 </LinearLayout>

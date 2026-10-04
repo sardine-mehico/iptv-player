@@ -8,7 +8,9 @@ import io.github.sardinemehico.iptvplayer.data.model.ContentType
 import io.github.sardinemehico.iptvplayer.data.model.Entry
 import io.github.sardinemehico.iptvplayer.data.repo.Playlist
 import io.github.sardinemehico.iptvplayer.data.repo.Repository
+import io.github.sardinemehico.iptvplayer.data.source.Episode
 import io.github.sardinemehico.iptvplayer.data.source.M3uParser
+import io.github.sardinemehico.iptvplayer.data.source.VodInfo
 import io.github.sardinemehico.iptvplayer.data.source.XtreamAccount
 import io.github.sardinemehico.iptvplayer.data.source.XtreamAction
 import io.github.sardinemehico.iptvplayer.data.source.XtreamCredentials
@@ -40,6 +42,23 @@ class Syncer(
         if (!account.authenticated) throw SyncException("Login failed. Check the server, username and password.")
         account
     }
+
+    /** Movie page details (get_vod_info). Not stored: fetched when the page opens. */
+    suspend fun vodInfo(p: Playlist, streamId: String): VodInfo = withContext(io) {
+        get(xtreamUrls(p).api(XtreamAction.VOD_INFO, "vod_id" to streamId)) { XtreamParser.parseVodInfo(it) }
+    }
+
+    /** Series page details and every episode (get_series_info). A series has at most a few hundred. */
+    suspend fun seriesInfo(p: Playlist, seriesId: String): Pair<VodInfo, List<Episode>> = withContext(io) {
+        val episodes = ArrayList<Episode>()
+        val info = get(xtreamUrls(p).api(XtreamAction.SERIES_INFO, "series_id" to seriesId)) { r ->
+            XtreamParser.parseSeriesInfo(r) { episodes += it }
+        }
+        episodes.sortWith(compareBy({ it.season }, { it.number }))
+        info to episodes
+    }
+
+    private fun xtreamUrls(p: Playlist) = XtreamUrls(XtreamCredentials(p.url, p.username.orEmpty(), p.password.orEmpty()))
 
     suspend fun sync(p: Playlist, progress: (String) -> Unit) {
         if (p.isXtream) syncXtream(p, progress) else syncM3u(p, progress)

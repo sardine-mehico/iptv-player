@@ -17,17 +17,51 @@
     <string name="action_open">Open</string>
     <string name="action_refresh">Refresh</string>
     <string name="action_delete">Delete</string>
+    <string name="action_details">Details</string>
+    <string name="hint_pin">6-digit PIN to protect details (optional)</string>
+    <string name="pin_enter">PIN for %1$s</string>
+    <string name="pin_new">New 6-digit PIN</string>
+    <string name="pin_wrong">Wrong PIN</string>
+    <string name="pin_locked">Too many wrong PINs. Try again in %1$d s</string>
+    <string name="pin_set">Set PIN</string>
+    <string name="pin_change">Change PIN</string>
+    <string name="pin_remove">Remove PIN</string>
+    <string name="pin_saved">PIN saved</string>
+    <string name="pin_removed">PIN removed</string>
 
     <string name="live_tv">Live TV</string>
     <string name="movies">Movies</string>
     <string name="series">Series</string>
     <string name="settings">Settings</string>
-    <string name="coming_next">Coming in the next build</string>
-
+    
     <string name="loading">Loading…</string>
     <string name="no_channels">No channels in this category</string>
     <string name="reconnecting">Reconnecting…</string>
     <string name="stream_failed">This stream is not available right now</string>
     <string name="favourite_added">Added to favourites</string>
     <string name="favourite_removed">Removed from favourites</string>
+
+    <string name="ctl_prev">‹ Prev</string>
+    <string name="ctl_next">Next ›</string>
+    <string name="ctl_pause">Pause</string>
+    <string name="ctl_play">Play</string>
+    <string name="ctl_audio">Audio</string>
+    <string name="ctl_subs">Subtitles</string>
+    <string name="ctl_aspect_fit">Aspect: Fit</string>
+    <string name="ctl_aspect_fill">Aspect: Stretch</string>
+    <string name="ctl_aspect_zoom">Aspect: Zoom</string>
+    <string name="ctl_fav_add">Favourite</string>
+    <string name="ctl_fav_remove">Unfavourite</string>
+    <string name="track_default">Default</string>
+    <string name="track_off">Off</string>
+    <string name="no_tracks">None in this stream</string>
+
+    <string name="play">Play</string>
+    <string name="nothing_here">Nothing in this category</string>
+    <string name="season_n">Season %1$d</string>
+    <string name="no_episodes">No episodes found</string>
+    <string name="ctl_rewind">« 10s</string>
+    <string name="ctl_forward">30s »</string>
+    <string name="ctl_prev_ep">‹ Prev ep</string>
+    <string name="ctl_next_ep">Next ep ›</string>
 </resources>

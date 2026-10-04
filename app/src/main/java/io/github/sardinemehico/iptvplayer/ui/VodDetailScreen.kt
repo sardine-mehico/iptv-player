@@ -1,0 +1,246 @@
+package io.github.sardinemehico.iptvplayer.ui
+
+import android.graphics.Rect
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import coil3.load
+import io.github.sardinemehico.iptvplayer.MainActivity
+import io.github.sardinemehico.iptvplayer.R
+import io.github.sardinemehico.iptvplayer.data.model.ContentType
+import io.github.sardinemehico.iptvplayer.data.repo.EntryDetails
+import io.github.sardinemehico.iptvplayer.data.repo.EntryRow
+import io.github.sardinemehico.iptvplayer.data.repo.Playlist
+import io.github.sardinemehico.iptvplayer.data.source.Episode
+import io.github.sardinemehico.iptvplayer.data.source.VodInfo
+import io.github.sardinemehico.iptvplayer.data.source.XtreamCredentials
+import io.github.sardinemehico.iptvplayer.data.source.XtreamUrls
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+
+/**
+ * A movie's or series' page: poster, details, Play and Favourite. Xtream series also get a
+ * season row and an episode list (from get_series_info). M3U "series" entries are single
+ * episode files, so they behave like movies.
+ *
+ * [onFavourite] tells the grid when the favourite state changed here.
+ */
+class VodDetailScreen(
+    activity: MainActivity,
+    private val playlist: Playlist,
+    private val type: ContentType,
+    private val row: EntryRow,
+    private val onFavourite: (Boolean) -> Unit,
+) : Screen(activity) {
+
+    override val root: View = inflater.inflate(R.layout.screen_vod_detail, null)
+
+    private val poster: ImageView = root.findViewById(R.id.poster)
+    private val meta: TextView = root.findViewById(R.id.meta)
+    private val plot: TextView = root.findViewById(R.id.plot)
+    private val people: TextView = root.findViewById(R.id.people)
+    private val play: TextView = root.findViewById(R.id.play)
+    private val favourite: TextView = root.findViewById(R.id.favourite)
+    private val busy: View = root.findViewById(R.id.busy)
+    private val message: TextView = root.findViewById(R.id.message)
+    private val seasonsScroll: View = root.findViewById(R.id.seasons_scroll)
+    private val seasonsRow: LinearLayout = root.findViewById(R.id.seasons)
+    private val episodesView: RecyclerView = root.findViewById(R.id.episodes)
+
+    private val urls = if (playlist.isXtream) {
+        XtreamUrls(XtreamCredentials(playlist.url, playlist.username.orEmpty(), playlist.password.orEmpty()))
+    } else {
+        null
+    }
+
+    /** Xtream series have episodes to fetch; everything else is one playable file. */
+    private val isEpisodic = type == ContentType.SERIES && row.streamUrl == null && urls != null
+
+    private var details: EntryDetails? = null
+    private var info: VodInfo? = null
+    private var isFav = row.favourite
+    private var episodes: List<Episode> = emptyList()
+    private var seasons: List<Int> = emptyList()
+    private var season = -1
+    private val episodeAdapter = EpisodeAdapter(::playEpisode)
+    private var loaded = false
+
+    init {
+        root.findViewById<TextView>(R.id.title).text = row.name
+        poster.load(row.logo)
+        play.setOnClickListener { onPlay() }
+        favourite.setOnClickListener { toggleFavourite() }
+        episodesView.layoutManager = LinearLayoutManager(activity)
+        episodesView.adapter = episodeAdapter
+        episodesView.itemAnimator = null
+        updateFavLabel()
+    }
+
+    override fun onShown() {
+        activity.setVideoRect(Rect(0, 0, 1, 1))
+        graph.player.stop()
+        if (!loaded) {
+            loaded = true
+            play.requestFocus()
+            scope.launch { load() }
+        }
+    }
+
+    private suspend fun load() {
+        details = graph.repo.details(playlist.id, type, row.itemId)
+        isFav = graph.repo.isFavourite(playlist.id, type, row.itemId)
+        updateFavLabel()
+        showInfo()
+        if (urls == null) return // M3U: nothing more to fetch.
+
+        busy.visibility = View.VISIBLE
+        try {
+            if (isEpisodic) {
+                val (i, eps) = graph.syncer.seriesInfo(playlist, row.itemId)
+                info = i
+                episodes = eps
+                showSeasons()
+            } else {
+                info = graph.syncer.vodInfo(playlist, row.itemId)
+            }
+            showInfo()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Details are a nice-to-have for movies; for series the episodes are needed.
+            if (isEpisodic) message.text = e.message ?: activity.getString(R.string.no_episodes)
+        } finally {
+            busy.visibility = View.GONE
+        }
+    }
+
+    private fun showInfo() {
+        val i = info
+        val d = details
+        val rating = (i?.rating ?: d?.rating)?.let { "★ $it" }
+        val year = i?.released?.take(4)?.takeIf { it.all(Char::isDigit) }
+        meta.text = listOfNotNull(rating, year, i?.duration, i?.genre).joinToString("   ·   ")
+        plot.text = i?.plot ?: d?.plot ?: ""
+        people.text = listOfNotNull(
+            i?.director?.let { "Director: $it" },
+            i?.cast?.let { "Cast: $it" },
+        ).joinToString("\n")
+        if (row.logo == null && i?.image != null) poster.load(i.image)
+    }
+
+    // ---- series ----
+
+    private fun showSeasons() {
+        if (episodes.isEmpty()) {
+            message.setText(R.string.no_episodes)
+            return
+        }
+        seasons = episodes.map { it.season }.distinct()
+        seasonsRow.removeAllViews()
+        val li = LayoutInflater.from(activity)
+        seasons.forEachIndexed { i, number ->
+            val v = li.inflate(R.layout.row_season, seasonsRow, false) as TextView
+            v.text = if (number > 0) activity.getString(R.string.season_n, number) else activity.getString(R.string.series)
+            // Moving onto a season shows its episodes; seasons are few, so no debounce needed.
+            v.setOnFocusChangeListener { _, has -> if (has) selectSeason(i) }
+            v.setOnClickListener { selectSeason(i); focusFirstEpisode() }
+            seasonsRow.addView(v)
+        }
+        seasonsScroll.visibility = View.VISIBLE
+        episodesView.visibility = View.VISIBLE
+        selectSeason(0)
+    }
+
+    private fun selectSeason(i: Int) {
+        if (i == season) return
+        season = i
+        for (k in 0 until seasonsRow.childCount) seasonsRow.getChildAt(k).isActivated = k == i
+        episodeAdapter.items = seasonEpisodes()
+        episodesView.scrollToPosition(0)
+    }
+
+    private fun seasonEpisodes(): List<Episode> {
+        val number = seasons.getOrNull(season) ?: return emptyList()
+        return episodes.filter { it.season == number }
+    }
+
+    private fun focusFirstEpisode() {
+        episodesView.post { episodesView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus() }
+    }
+
+    private fun playEpisode(index: Int) {
+        val u = urls ?: return
+        val list = seasonEpisodes()
+        val prefix = seasons.getOrNull(season)?.takeIf { it > 0 }?.let { "S$it " } ?: ""
+        val items = list.map { PlayItem(u.episode(it.id, it.containerExt ?: "mp4"), "${row.name} · ${prefix}E${it.number} ${it.title}") }
+        activity.push(PlayerScreen(activity, items, index))
+    }
+
+    // ---- actions ----
+
+    private fun onPlay() {
+        if (isEpisodic) {
+            if (seasonEpisodes().isNotEmpty()) playEpisode(0) else activity.toast(activity.getString(R.string.loading))
+            return
+        }
+        val url = row.streamUrl
+            ?: urls?.movie(row.itemId, info?.containerExt ?: details?.ext ?: row.ext ?: "mp4")
+            ?: return
+        activity.push(PlayerScreen(activity, listOf(PlayItem(url, row.name)), 0))
+    }
+
+    private fun toggleFavourite() {
+        scope.launch {
+            isFav = graph.repo.toggleFavourite(playlist.id, type, row.itemId)
+            updateFavLabel()
+            onFavourite(isFav)
+            activity.toast(activity.getString(if (isFav) R.string.favourite_added else R.string.favourite_removed))
+        }
+    }
+
+    private fun updateFavLabel() {
+        favourite.setText(if (isFav) R.string.ctl_fav_remove else R.string.ctl_fav_add)
+    }
+
+    /** Season's episodes: few enough to hold in memory. */
+    private class EpisodeAdapter(private val onClick: (Int) -> Unit) : RecyclerView.Adapter<EpisodeAdapter.VH>() {
+
+        var items: List<Episode> = emptyList()
+            set(value) {
+                field = value
+                notifyDataSetChanged()
+            }
+
+        init {
+            setHasStableIds(true)
+        }
+
+        override fun getItemCount() = items.size
+        override fun getItemId(position: Int) = position.toLong()
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+            VH(LayoutInflater.from(parent.context).inflate(R.layout.row_category, parent, false) as TextView)
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            val e = items[position]
+            val mins = e.durationSecs / 60
+            holder.text.text = buildString {
+                append("E").append(e.number).append("   ").append(e.title)
+                if (mins > 0) append("   ·   ").append(mins).append(" min")
+            }
+        }
+
+        inner class VH(val text: TextView) : RecyclerView.ViewHolder(text) {
+            init {
+                text.setOnClickListener {
+                    if (bindingAdapterPosition != RecyclerView.NO_POSITION) onClick(bindingAdapterPosition)
+                }
+            }
+        }
+    }
+}

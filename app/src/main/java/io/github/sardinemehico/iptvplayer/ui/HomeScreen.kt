@@ -5,11 +5,12 @@ import android.view.View
 import android.widget.TextView
 import io.github.sardinemehico.iptvplayer.MainActivity
 import io.github.sardinemehico.iptvplayer.R
+import io.github.sardinemehico.iptvplayer.data.model.ContentType
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
 
-/** Live TV · Movies · Series · Playlists, as on IBO's home screen. */
+/** Live TV · Movies · Series · Settings, as on IBO's home screen. */
 class HomeScreen(activity: MainActivity) : Screen(activity) {
 
     override val root: View = inflater.inflate(R.layout.screen_home, null)
@@ -18,9 +19,10 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
 
     init {
         live.setOnClickListener { activity.push(LiveScreen(activity)) }
-        root.findViewById<View>(R.id.tile_movies).setOnClickListener { activity.toast(activity.getString(R.string.coming_next)) }
-        root.findViewById<View>(R.id.tile_series).setOnClickListener { activity.toast(activity.getString(R.string.coming_next)) }
-        root.findViewById<View>(R.id.tile_playlists).setOnClickListener { activity.push(PlaylistsScreen(activity)) }
+        root.findViewById<View>(R.id.tile_movies).setOnClickListener { activity.push(VodScreen(activity, ContentType.MOVIE)) }
+        root.findViewById<View>(R.id.tile_series).setOnClickListener { activity.push(VodScreen(activity, ContentType.SERIES)) }
+        // Settings holds the playlist list (add, refresh, details, delete).
+        root.findViewById<View>(R.id.tile_settings).setOnClickListener { activity.push(PlaylistsScreen(activity)) }
     }
 
     override fun onShown() {

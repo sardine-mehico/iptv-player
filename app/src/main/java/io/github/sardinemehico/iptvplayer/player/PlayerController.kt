@@ -10,6 +10,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackGroup
+import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -32,7 +34,7 @@ class PlayerController(context: Context, http: OkHttpClient) {
         fun onState(state: State) {}
     }
 
-    enum class State { IDLE, BUFFERING, PLAYING, RECONNECTING, FAILED }
+    enum class State { IDLE, BUFFERING, PLAYING, RECONNECTING, FAILED, ENDED }
 
     private val main = Handler(Looper.getMainLooper())
     private val listeners = ArrayList<Listener>()
@@ -70,6 +72,7 @@ class PlayerController(context: Context, http: OkHttpClient) {
                         retries = 0
                         emit(State.PLAYING)
                     }
+                    Player.STATE_ENDED -> emit(State.ENDED)
                     else -> Unit
                 }
             }
@@ -119,6 +122,61 @@ class PlayerController(context: Context, http: OkHttpClient) {
     }
 
     val playingUrl: String? get() = currentUrl
+
+    val isPaused: Boolean get() = !player.playWhenReady
+
+    /** Pause or resume. Live streams pick up where the buffer is (or jump to live if it expired). */
+    fun togglePause() {
+        player.playWhenReady = !player.playWhenReady
+    }
+
+    /** Movies and episodes: current position and length in ms (0 if not known yet). */
+    val positionMs: Long get() = player.currentPosition.coerceAtLeast(0)
+    val durationMs: Long get() = player.duration.takeIf { it != C.TIME_UNSET }?.coerceAtLeast(0) ?: 0
+
+    fun seekBy(deltaMs: Long) {
+        val d = durationMs
+        val target = (positionMs + deltaMs).coerceAtLeast(0)
+        player.seekTo(if (d > 0) target.coerceAtMost(d - 1000) else target)
+    }
+
+    /** One selectable audio or subtitle track of the current stream. */
+    class Track(val label: String, val group: TrackGroup, val index: Int, val selected: Boolean)
+
+    /** Tracks of [type] (C.TRACK_TYPE_AUDIO or C.TRACK_TYPE_TEXT) the device can play. */
+    fun tracks(type: Int): List<Track> {
+        val out = ArrayList<Track>()
+        for (g in player.currentTracks.groups) {
+            if (g.type != type) continue
+            for (i in 0 until g.length) {
+                if (!g.isTrackSupported(i)) continue
+                val f = g.getTrackFormat(i)
+                val parts = listOfNotNull(
+                    f.label,
+                    f.language?.takeIf { it != "und" }?.let { java.util.Locale.forLanguageTag(it).displayLanguage.ifEmpty { it } },
+                    f.channelCount.takeIf { it > 0 }?.let { "${it}ch" },
+                ).distinct()
+                val label = parts.joinToString(" · ").ifEmpty { "Track ${out.size + 1}" }
+                out += Track(label, g.mediaTrackGroup, i, g.isTrackSelected(i))
+            }
+        }
+        return out
+    }
+
+    /** Selects [track]; null turns the type off (used for subtitles). */
+    fun selectTrack(type: Int, track: Track?) {
+        val b = player.trackSelectionParameters.buildUpon().clearOverridesOfType(type)
+        if (track == null) {
+            b.setTrackTypeDisabled(type, true)
+        } else {
+            b.setTrackTypeDisabled(type, false)
+            b.setOverrideForType(TrackSelectionOverride(track.group, track.index))
+        }
+        player.trackSelectionParameters = b.build()
+    }
+
+    /** True if [type] is switched off by the user. */
+    fun isTrackTypeDisabled(type: Int) = type in player.trackSelectionParameters.disabledTrackTypes
 
     fun stop() {
         main.removeCallbacksAndMessages(null)

@@ -37,6 +37,20 @@ data class Episode(
     val durationSecs: Int,
 )
 
+/** Details shown on a movie or series page (get_vod_info / get_series_info "info"). All optional. */
+data class VodInfo(
+    val plot: String? = null,
+    val genre: String? = null,
+    val released: String? = null,
+    val duration: String? = null,
+    val cast: String? = null,
+    val director: String? = null,
+    val rating: String? = null,
+    val image: String? = null,
+    /** Movies only: the file extension the panel serves, e.g. "mkv". */
+    val containerExt: String? = null,
+)
+
 /**
  * Streaming parsers for Xtream JSON responses. Every field is optional and read leniently:
  * panels disagree on types (numbers vs strings) and on which fields exist at all.
@@ -191,14 +205,73 @@ object XtreamParser {
         }
     }
 
+    /** get_vod_info: {"info": {...}, "movie_data": {"container_extension": ...}}. */
+    fun parseVodInfo(reader: Reader): VodInfo {
+        var info = VodInfo()
+        var ext: String? = null
+        JsonPull(reader).use { json ->
+            if (json.peek() != JsonPull.Token.BEGIN_OBJECT) { json.skipValue(); return info }
+            json.fields { field ->
+                when (field) {
+                    "info" -> info = readInfo(json)
+                    "movie_data" -> json.fields { f ->
+                        if (f == "container_extension") ext = json.nextStringOrNull() else json.skipValue()
+                    }
+                    else -> json.skipValue()
+                }
+            }
+        }
+        return info.copy(containerExt = ext?.trim()?.takeIf { it.isNotEmpty() })
+    }
+
+    /** The "info" object shared by get_vod_info and get_series_info. Panels name fields differently. */
+    private fun readInfo(json: JsonPull): VodInfo {
+        var plot: String? = null
+        var genre: String? = null
+        var released: String? = null
+        var duration: String? = null
+        var durationSecs = 0L
+        var cast: String? = null
+        var director: String? = null
+        var rating: String? = null
+        var image: String? = null
+        fun keep(old: String?, new: String?) = old?.takeIf { it.isNotBlank() } ?: new?.trim()?.takeIf { it.isNotEmpty() }
+        json.fields { f ->
+            when (f) {
+                "plot", "description" -> plot = keep(plot, json.nextStringOrNull())
+                "genre" -> genre = keep(genre, json.nextStringOrNull())
+                "releasedate", "releaseDate", "release_date" -> released = keep(released, json.nextStringOrNull())
+                "duration" -> duration = keep(duration, json.nextStringOrNull())
+                "duration_secs", "episode_run_time" -> durationSecs = json.nextLongOrNull() ?: durationSecs
+                "cast", "actors" -> cast = keep(cast, json.nextStringOrNull())
+                "director" -> director = keep(director, json.nextStringOrNull())
+                "rating" -> rating = keep(rating, json.nextStringOrNull())
+                "movie_image", "cover_big", "cover" -> image = keep(image, json.nextStringOrNull())
+                else -> json.skipValue()
+            }
+        }
+        if (duration == null && durationSecs > 0) {
+            // episode_run_time is minutes, duration_secs is seconds.
+            val mins = if (durationSecs > 600) durationSecs / 60 else durationSecs
+            duration = if (mins >= 60) "${mins / 60}h ${mins % 60}m" else "${mins}m"
+        }
+        return VodInfo(plot, genre, released, duration, cast, director, rating?.takeIf { it != "0" }, image)
+    }
+
+    fun parseSeriesEpisodes(reader: Reader, onEach: (Episode) -> Unit) {
+        parseSeriesInfo(reader, onEach)
+    }
+
     /**
      * get_series_info. Episodes come as {"1": [...], "2": [...]} keyed by season on most panels,
-     * or as an array of arrays on some.
+     * or as an array of arrays on some. Returns the series' "info" block.
      */
-    fun parseSeriesEpisodes(reader: Reader, onEach: (Episode) -> Unit) {
+    fun parseSeriesInfo(reader: Reader, onEach: (Episode) -> Unit): VodInfo {
+        var info = VodInfo()
         JsonPull(reader).use { json ->
-            if (json.peek() != JsonPull.Token.BEGIN_OBJECT) { json.skipValue(); return }
+            if (json.peek() != JsonPull.Token.BEGIN_OBJECT) { json.skipValue(); return info }
             json.fields { field ->
+                if (field == "info") { info = readInfo(json); return@fields }
                 if (field != "episodes") { json.skipValue(); return@fields }
                 when (json.peek()) {
                     JsonPull.Token.BEGIN_OBJECT -> json.fields { seasonKey ->
@@ -216,6 +289,7 @@ object XtreamParser {
                 }
             }
         }
+        return info
     }
 
     private fun readEpisode(json: JsonPull, seasonFromKey: Int, onEach: (Episode) -> Unit) {

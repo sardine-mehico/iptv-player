@@ -9,7 +9,9 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.annotation.OptIn
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import io.github.sardinemehico.iptvplayer.ui.AddPlaylistScreen
 import io.github.sardinemehico.iptvplayer.ui.HomeScreen
@@ -22,6 +24,7 @@ import kotlinx.coroutines.launch
  * lifetime (one SurfaceView, never hidden); screens are stacked above it and either cover it
  * or leave a transparent hole where the video should show.
  */
+@OptIn(UnstableApi::class)
 class MainActivity : ComponentActivity() {
 
     lateinit var playerView: PlayerView
@@ -35,6 +38,7 @@ class MainActivity : ComponentActivity() {
         playerView = findViewById(R.id.player)
         screens = findViewById(R.id.screens)
         App.graph.player.attach(playerView)
+        playerView.resizeMode = App.graph.prefs.resizeMode
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -126,6 +130,8 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         // Leaving the app (Home button): stop the stream so it doesn't keep downloading.
+        // onHidden first, so a screen can note where playback was (onStart calls onShown again).
+        stack.lastOrNull()?.onHidden()
         App.graph.player.stop()
     }
 

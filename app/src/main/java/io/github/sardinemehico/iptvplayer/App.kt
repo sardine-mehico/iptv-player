@@ -89,4 +89,9 @@ class Prefs(private val sp: SharedPreferences) {
     var lastLiveItem: String?
         get() = sp.getString("last_live_item", null)
         set(v) = sp.edit().putString("last_live_item", v).apply()
+
+    /** PlayerView resize mode (AspectRatioFrameLayout.RESIZE_MODE_*), 0 = fit. */
+    var resizeMode: Int
+        get() = sp.getInt("resize_mode", 0)
+        set(v) = sp.edit().putInt("resize_mode", v).apply()
 }

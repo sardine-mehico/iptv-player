@@ -6,6 +6,7 @@ import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
 import android.widget.TextView
+import androidx.media3.common.C
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.github.sardinemehico.iptvplayer.MainActivity
@@ -25,7 +26,8 @@ import kotlinx.coroutines.launch
 /**
  * Live TV: categories · channels · preview, like IBO's live screen.
  * OK on a channel plays it in the preview; OK again goes full screen.
- * Full screen: Up/Down or CH+/CH- zap, OK shows the banner, Back returns to the list.
+ * Full screen: Up/Down or CH+/CH- zap, OK shows the controls, Back steps back one level
+ * (controls → full screen → list), always to the same category and channel.
  */
 class LiveScreen(activity: MainActivity) : Screen(activity) {
 
@@ -43,9 +45,13 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
     private val bannerName: TextView = root.findViewById(R.id.banner_name)
     private val bannerInfo: TextView = root.findViewById(R.id.banner_info)
     private val osdStatus: TextView = root.findViewById(R.id.osd_status)
+    private val controls: View = root.findViewById(R.id.controls)
+    private val ctlPause: TextView = root.findViewById(R.id.ctl_pause)
+    private val ctlAspect: TextView = root.findViewById(R.id.ctl_aspect)
+    private val ctlFav: TextView = root.findViewById(R.id.ctl_fav)
 
     private val handler = Handler(Looper.getMainLooper())
-    private val hideBanner = Runnable { banner.visibility = View.GONE }
+    private val hideBanner = Runnable { hideOverlay() }
 
     private val categoryAdapter = CategoryAdapter(onFocused = ::onCategoryFocused, onClicked = ::onCategoryClicked)
     private val channelAdapter = PagedEntryAdapter(scope, ::onChannelClicked)
@@ -63,6 +69,8 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
     private var loaded = false
     private var categoryJob: Job? = null
     private var pendingCategory: Job? = null
+    /** Set while focus is moved back from full screen, so a passing category row can't switch the list. */
+    private var restoringFocus = false
 
     private val playerListener = object : PlayerController.Listener {
         override fun onState(state: PlayerController.State) {
@@ -87,6 +95,15 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
         channelsView.itemAnimator = null
         channelsView.setHasFixedSize(true)
         channelsView.setItemViewCacheSize(12)
+
+        root.findViewById<View>(R.id.ctl_prev).setOnClickListener { zap(-1) }
+        root.findViewById<View>(R.id.ctl_next).setOnClickListener { zap(+1) }
+        ctlPause.setOnClickListener { togglePause() }
+        root.findViewById<View>(R.id.ctl_audio).setOnClickListener { chooseTrack(C.TRACK_TYPE_AUDIO) }
+        root.findViewById<View>(R.id.ctl_subs).setOnClickListener { chooseTrack(C.TRACK_TYPE_TEXT) }
+        ctlAspect.setOnClickListener { cycleAspect() }
+        ctlFav.setOnClickListener { playingRow?.let { toggleFavourite(playingIndex, it) } }
+        updateAspectLabel()
 
         // Keep the preview 16:9 and put the video exactly under it whenever layout changes.
         preview.addOnLayoutChangeListener { v, left, _, right, _, _, _, _, _ ->
@@ -119,20 +136,29 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
     }
 
     override fun onBack(): Boolean {
-        if (fullscreen) {
-            exitFullscreen()
-            return true
-        }
-        return false
+        if (!fullscreen) return false
+        if (controls.visibility == View.VISIBLE) hideOverlay() else exitFullscreen()
+        return true
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         if (fullscreen) {
+            val controlsShown = controls.visibility == View.VISIBLE
             when (keyCode) {
                 KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_DOWN -> zap(-1)
                 KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_UP -> zap(+1)
-                KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_LEFT,
-                KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_INFO -> showBanner()
+                KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER,
+                KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                    // With the controls up, these move focus or press the focused button.
+                    if (controlsShown) {
+                        scheduleHide()
+                        return false
+                    }
+                    showOverlay(withControls = true)
+                }
+                KeyEvent.KEYCODE_INFO -> showOverlay(withControls = true)
+                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_PLAY,
+                KeyEvent.KEYCODE_MEDIA_PAUSE -> togglePause()
                 KeyEvent.KEYCODE_MENU -> playingRow?.let { toggleFavourite(playingIndex, it) }
                 else -> return false
             }
@@ -183,7 +209,7 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
     }
 
     private fun onCategoryFocused(index: Int) {
-        if (index == categoryIndex) return
+        if (index == categoryIndex || restoringFocus) return
         // Debounce: holding Down through the category list must not run a query per row.
         pendingCategory?.cancel()
         pendingCategory = scope.launch {
@@ -217,19 +243,34 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
         channelsView.scrollToPosition(0)
     }
 
-    private fun focusChannel(index: Int) {
-        if (channelCount == 0) return
+    private fun focusChannel(index: Int, done: () -> Unit = {}) {
+        if (channelCount == 0) return done()
         val i = index.coerceIn(0, channelCount - 1)
         (channelsView.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(i, channelsView.height / 3)
-        channelsView.post {
-            channelsView.findViewHolderForAdapterPosition(i)?.itemView?.requestFocus()
+        // The row exists only after the next layout pass; on a slow box that can take a frame or two.
+        var tries = 0
+        fun attempt() {
+            val row = channelsView.findViewHolderForAdapterPosition(i)?.itemView
+            if (row != null) {
+                row.requestFocus()
+                done()
+            } else if (++tries < 5) {
+                channelsView.post { attempt() }
+            } else {
+                done()
+            }
         }
+        channelsView.post { attempt() }
     }
 
     // ---- playback ----
 
     private fun onChannelClicked(index: Int, row: EntryRow) {
         if (row.itemId == playingRow?.itemId && graph.player.playingUrl != null) {
+            // The same channel can sit at another position in another category (e.g. All):
+            // zapping and returning from full screen must use its place in this list.
+            playingIndex = index
+            playingRow = row
             enterFullscreen()
         } else {
             play(index, row)
@@ -245,7 +286,7 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
         graph.player.play(url)
         graph.prefs.lastLiveCategory = categoryKey
         graph.prefs.lastLiveItem = row.itemId
-        if (fullscreen) showBanner()
+        if (fullscreen) showOverlay(withControls = controls.visibility == View.VISIBLE)
     }
 
     private fun zap(delta: Int) {
@@ -269,8 +310,12 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
         scope.launch {
             val fav = graph.repo.toggleFavourite(p.id, ContentType.LIVE, row.itemId)
             activity.toast(activity.getString(if (fav) R.string.favourite_added else R.string.favourite_removed))
+            if (row.itemId == playingRow?.itemId) {
+                playingRow = playingRow?.copy(favourite = fav)
+                updateFavLabel()
+            }
             if (categoryKey == Repository.KEY_FAV) {
-                selectCategory(categoryIndex)
+                if (!fullscreen) selectCategory(categoryIndex)
             } else {
                 channelAdapter.setFavourite(index, fav)
             }
@@ -286,26 +331,87 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
         // The root only takes focus in full screen, so it never steals D-pad focus from the lists.
         root.isFocusable = true
         root.requestFocus()
-        showBanner()
+        showOverlay(withControls = false)
     }
 
     private fun exitFullscreen() {
         fullscreen = false
+        handler.removeCallbacks(hideBanner)
         banner.visibility = View.GONE
+        controls.visibility = View.GONE
         osdStatus.visibility = View.GONE
+        if (graph.player.isPaused) togglePause()
+        // Bug fix: making the focused root unfocusable used to drop focus on the first category
+        // row, whose focus listener then switched the list to that category. Panels first, then
+        // focus the channel, and ignore category focus until it lands.
+        pendingCategory?.cancel()
+        restoringFocus = true
         panels.visibility = View.VISIBLE
         root.isFocusable = false
         preview.post { placeVideoInPreview() }
-        if (playingIndex >= 0) focusChannel(playingIndex)
+        scope.launch {
+            // Favourites may have changed while in full screen.
+            if (categoryKey == Repository.KEY_FAV) selectCategory(categoryIndex)
+            focusChannel(playingIndex.coerceAtLeast(0)) {
+                restoringFocus = false
+                pendingCategory?.cancel()
+            }
+        }
     }
 
-    private fun showBanner() {
+    /** Channel banner, plus the control buttons when [withControls]. Hides itself after a few seconds. */
+    private fun showOverlay(withControls: Boolean) {
         val row = playingRow ?: return
         bannerName.text = "${playingIndex + 1}  ${row.name}"
         bannerInfo.text = categories.getOrNull(categoryIndex)?.name.orEmpty()
+        updateFavLabel()
+        updatePauseLabel()
         banner.visibility = View.VISIBLE
+        if (withControls && controls.visibility != View.VISIBLE) {
+            controls.visibility = View.VISIBLE
+            ctlPause.requestFocus()
+        }
+        scheduleHide()
+    }
+
+    private fun hideOverlay() {
         handler.removeCallbacks(hideBanner)
-        handler.postDelayed(hideBanner, 4_000)
+        banner.visibility = View.GONE
+        controls.visibility = View.GONE
+        if (fullscreen) root.requestFocus()
+    }
+
+    private fun scheduleHide() {
+        handler.removeCallbacks(hideBanner)
+        handler.postDelayed(hideBanner, if (controls.visibility == View.VISIBLE) 6_000 else 4_000)
+    }
+
+    private fun togglePause() {
+        graph.player.togglePause()
+        updatePauseLabel()
+        if (fullscreen) showOverlay(withControls = controls.visibility == View.VISIBLE)
+    }
+
+    private fun updatePauseLabel() {
+        ctlPause.setText(if (graph.player.isPaused) R.string.ctl_play else R.string.ctl_pause)
+    }
+
+    private fun updateFavLabel() {
+        ctlFav.setText(if (playingRow?.favourite == true) R.string.ctl_fav_remove else R.string.ctl_fav_add)
+    }
+
+    private fun cycleAspect() {
+        PlayerUi.cycleAspect(activity)
+        updateAspectLabel()
+        scheduleHide()
+    }
+
+    private fun updateAspectLabel() = ctlAspect.setText(PlayerUi.aspectLabel(activity))
+
+    /** Audio or subtitle picker. The overlay stays up while the dialog is open. */
+    private fun chooseTrack(type: Int) {
+        handler.removeCallbacks(hideBanner)
+        PlayerUi.chooseTrack(activity, type) { if (fullscreen) scheduleHide() }
     }
 
     private fun placeVideoInPreview() {
