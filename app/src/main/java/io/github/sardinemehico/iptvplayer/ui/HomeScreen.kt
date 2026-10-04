@@ -23,6 +23,8 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
         root.findViewById<View>(R.id.tile_series).setOnClickListener { activity.push(VodScreen(activity, ContentType.SERIES)) }
         // Settings holds the playlist list (add, refresh, details, delete).
         root.findViewById<View>(R.id.tile_settings).setOnClickListener { activity.push(PlaylistsScreen(activity)) }
+        val version = activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
+        root.findViewById<TextView>(R.id.version).text = activity.getString(R.string.version_label, version)
     }
 
     override fun onShown() {

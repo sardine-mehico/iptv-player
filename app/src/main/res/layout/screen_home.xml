@@ -55,4 +55,13 @@
             android:drawableTop="@drawable/ic_settings"
             android:text="@string/settings" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/version"
+        style="@style/Text.Secondary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:paddingBottom="20dp"
+        android:textSize="14sp" />
 </LinearLayout>

@@ -75,4 +75,5 @@
     <string name="auto_start_off">Auto-start on boot: Off</string>
     <string name="auto_start_permission">Allow “display over other apps” so the app can open at boot</string>
     <string name="auto_start_no_settings">Auto-start is on, but this box may block it: allow “display over other apps” for IPTV Player in system settings</string>
+    <string name="version_label">Version %1$s</string>
 </resources>
