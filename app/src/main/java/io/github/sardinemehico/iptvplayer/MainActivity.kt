@@ -1,5 +1,6 @@
 package io.github.sardinemehico.iptvplayer
 
+import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
 import android.view.KeyEvent
@@ -44,7 +45,8 @@ class MainActivity : ComponentActivity() {
             override fun handleOnBackPressed() {
                 val top = stack.lastOrNull() ?: return finish()
                 if (top.onBack()) return
-                if (stack.size > 1) pop() else finish()
+                if (stack.size > 1) pop() else if (!isLauncher()) finish()
+                // As the launcher, Back on the home screen stays put: there is nothing behind it.
             }
         })
 
@@ -52,15 +54,30 @@ class MainActivity : ComponentActivity() {
     }
 
     /** First screen: add a playlist, pick one, or go straight home. */
+    /**
+     * The home screen is always at the bottom of the stack (it is also the launcher, with the
+     * app slots); with no playlist yet, the add/choose screen opens on top of it.
+     */
     private suspend fun route() {
         val graph = App.graph
         val playlists = graph.repo.playlists()
         val active = playlists.firstOrNull { it.id == graph.prefs.activePlaylist }
+        push(HomeScreen(this))
         when {
             playlists.isEmpty() -> push(AddPlaylistScreen(this, firstRun = true))
             active == null -> push(PlaylistsScreen(this))
-            else -> push(HomeScreen(this))
         }
+    }
+
+    /** True when the box opened us as its launcher (Home), not from the app list. */
+    fun isLauncher() = intent?.hasCategory(Intent.CATEGORY_HOME) == true
+
+    /** Home button while WorldTV is the launcher: back to the home screen, wherever we are. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (!intent.hasCategory(Intent.CATEGORY_HOME)) return
+        setIntent(intent)
+        while (stack.size > 1 && stack.last() !is HomeScreen) pop()
     }
 
     fun push(screen: Screen) {

@@ -18,8 +18,9 @@ import io.github.sardinemehico.iptvplayer.data.repo.Pin
 import io.github.sardinemehico.iptvplayer.data.repo.Playlist
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-/** Settings: auto-start on boot, and the saved playlists (open, refresh, details, delete, add). */
+/** App Settings: auto-start on boot, all apps, Android settings, and the saved playlists (open, refresh, details, delete, add). */
 class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
 
     override val root: View = inflater.inflate(R.layout.screen_playlists, null)
@@ -34,6 +35,19 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
     init {
         add.setOnClickListener { activity.push(AddPlaylistScreen(activity)) }
         autoStart.setOnClickListener { toggleAutoStart() }
+        root.findViewById<View>(R.id.all_apps).setOnClickListener {
+            scope.launch {
+                val apps = withContext(graph.io) { Apps.list(activity) }
+                Apps.pick(activity, R.string.all_apps, apps) { Apps.launch(activity, it.pkg) }
+            }
+        }
+        root.findViewById<View>(R.id.android_settings).setOnClickListener {
+            try {
+                activity.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (e: ActivityNotFoundException) {
+                activity.toast(activity.getString(R.string.app_missing))
+            }
+        }
         updateAutoStart()
     }
 
@@ -198,7 +212,8 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
                     graph.repo.deletePlaylist(p.id)
                     if (graph.prefs.activePlaylist == p.id) graph.prefs.activePlaylist = -1
                     if (graph.repo.playlists().isEmpty()) {
-                        activity.resetTo(AddPlaylistScreen(activity, firstRun = true))
+                        activity.resetTo(HomeScreen(activity))
+                        activity.push(AddPlaylistScreen(activity, firstRun = true))
                     } else {
                         reload()
                     }

@@ -47,10 +47,17 @@
             android:ellipsize="end" />
     </LinearLayout>
 
+    <!-- Big tiles, then the app slots, centred in the space left. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="horizontal">
 
@@ -95,6 +102,54 @@
                 android:drawableStart="@drawable/ic_refresh"
                 android:text="@string/reload_playlist" />
         </LinearLayout>
+    </LinearLayout>
+
+    <!-- Five app slots the user fills, like Android TV's favourite apps row. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <include
+            android:id="@+id/app_slot_0"
+            layout="@layout/row_app_slot"
+            android:layout_width="0dp"
+            android:layout_height="96dp"
+            android:layout_weight="1" />
+
+        <include
+            android:id="@+id/app_slot_1"
+            layout="@layout/row_app_slot"
+            android:layout_marginStart="16dp"
+            android:layout_width="0dp"
+            android:layout_height="96dp"
+            android:layout_weight="1" />
+
+        <include
+            android:id="@+id/app_slot_2"
+            layout="@layout/row_app_slot"
+            android:layout_marginStart="16dp"
+            android:layout_width="0dp"
+            android:layout_height="96dp"
+            android:layout_weight="1" />
+
+        <include
+            android:id="@+id/app_slot_3"
+            layout="@layout/row_app_slot"
+            android:layout_marginStart="16dp"
+            android:layout_width="0dp"
+            android:layout_height="96dp"
+            android:layout_weight="1" />
+
+        <include
+            android:id="@+id/app_slot_4"
+            layout="@layout/row_app_slot"
+            android:layout_marginStart="16dp"
+            android:layout_width="0dp"
+            android:layout_height="96dp"
+            android:layout_weight="1" />
+    </LinearLayout>
     </LinearLayout>
 
     <TextView

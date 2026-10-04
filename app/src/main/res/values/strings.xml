@@ -32,7 +32,7 @@
     <string name="live_tv">Live TV</string>
     <string name="movies">Movies</string>
     <string name="series">Series</string>
-    <string name="settings">Settings</string>
+    <string name="settings">App Settings</string>
     
     <string name="loading">Loading…</string>
     <string name="no_channels">No channels in this category</string>
@@ -86,4 +86,13 @@
     <string name="reloading">Reloading playlist…</string>
     <string name="reload_done">Playlist is up to date</string>
     <string name="reload_failed">Reload failed: %1$s</string>
+
+    <string name="add_app">Add app</string>
+    <string name="choose_app">Choose an app</string>
+    <string name="all_apps">All apps</string>
+    <string name="android_settings">Android settings</string>
+    <string name="app_missing">That app is not installed</string>
+    <string name="slot_change">Change app</string>
+    <string name="slot_remove">Remove from home screen</string>
+    <string name="no_playlist_yet">Add a playlist first</string>
 </resources>

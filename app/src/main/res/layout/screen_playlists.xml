@@ -42,6 +42,29 @@
             android:textSize="14sp"
             android:visibility="gone" />
 
+        <!-- Way out to other apps and the box's own settings: needed when WorldTV is the launcher. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/all_apps"
+                style="@style/TileButton"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:text="@string/all_apps" />
+
+            <TextView
+                android:id="@+id/android_settings"
+                style="@style/TileButton"
+                android:layout_width="0dp"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:text="@string/android_settings" />
+        </LinearLayout>
+
         <TextView
             style="@style/Text.Body"
             android:layout_width="wrap_content"

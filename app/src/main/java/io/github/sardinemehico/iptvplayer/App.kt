@@ -105,6 +105,11 @@ class Prefs(private val sp: SharedPreferences) {
         get() = sp.getBoolean("last_boot_allowed", false)
         set(v) = sp.edit().putBoolean("last_boot_allowed", v).apply()
 
+    /** Package shown in home-screen app slot [index] (0..4), or null if the slot is empty. */
+    fun appSlot(index: Int): String? = sp.getString("app_slot_$index", null)
+
+    fun setAppSlot(index: Int, pkg: String?) = sp.edit().putString("app_slot_$index", pkg).apply()
+
     /** PlayerView resize mode (AspectRatioFrameLayout.RESIZE_MODE_*), 0 = fit. */
     var resizeMode: Int
         get() = sp.getInt("resize_mode", 0)
