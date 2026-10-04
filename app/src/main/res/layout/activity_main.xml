@@ -6,12 +6,14 @@
     android:layout_height="match_parent"
     android:background="@color/background">
 
-    <!-- The only video surface in the app. Moved and resized, never hidden. -->
+    <!-- The only video surface in the app. Moved and resized; gone while no screen shows video
+         (see MainActivity.hideVideo). Starts gone: the first screen is the menu. -->
     <androidx.media3.ui.PlayerView
         android:id="@+id/player"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:focusable="false"
+        android:visibility="gone"
         android:descendantFocusability="blocksDescendants"
         app:resize_mode="fit"
         app:shutter_background_color="#FF000000"

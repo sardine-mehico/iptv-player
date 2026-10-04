@@ -91,8 +91,20 @@
     <string name="choose_app">Choose an app</string>
     <string name="all_apps">All apps</string>
     <string name="android_settings">Android settings</string>
+    <string name="android_settings_short">Settings</string>
     <string name="app_missing">That app is not installed</string>
     <string name="slot_change">Change app</string>
     <string name="slot_remove">Remove from home screen</string>
     <string name="no_playlist_yet">Add a playlist first</string>
+
+    <string name="ctl_external">Open in…</string>
+    <string name="open_with">Open with</string>
+    <string name="no_external_player">No other video player is installed. Install VLC from the Play Store.</string>
+    <string name="audio_unsupported">This channel\'s sound format can\'t be played on this box. Press OK, then “Open in…” to use another player.</string>
+
+    <string name="license_notice">WorldTV is free software under the GNU GPL v3.0 and comes with no warranty. Source code: github.com/sardine-mehico/iptv-player. Uses FFmpeg (via the Jellyfin Media3 FFmpeg decoder) for some audio formats.</string>
+
+    <string name="dns_system">DNS: Box default</string>
+    <string name="dns_cloudflare">DNS: Cloudflare 1.1.1.1 (encrypted)</string>
+    <string name="dns_google">DNS: Google 8.8.8.8 (encrypted)</string>
 </resources>

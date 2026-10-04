@@ -13,6 +13,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.allowRgb565
 import coil3.request.crossfade
 import io.github.sardinemehico.iptvplayer.data.db.Db
+import io.github.sardinemehico.iptvplayer.data.net.AppDns
 import io.github.sardinemehico.iptvplayer.data.repo.Repository
 import io.github.sardinemehico.iptvplayer.data.sync.Syncer
 import io.github.sardinemehico.iptvplayer.player.PlayerController
@@ -41,7 +42,7 @@ class App : Application(), SingletonImageLoader.Factory {
                     .maxSizeBytes(64L * 1024 * 1024)
                     .build()
             }
-            .components { add(OkHttpNetworkFetcherFactory(callFactory = { graph.http })) }
+            .components { add(OkHttpNetworkFetcherFactory(callFactory = { graph.imageHttp })) }
             .allowRgb565(true)
             .crossfade(false)
             .build()
@@ -66,6 +67,20 @@ class AppGraph(private val app: Application) {
             .followRedirects(true)
             .followSslRedirects(true)
             .retryOnConnectionFailure(true)
+            // System DNS, or Cloudflare / Google encrypted DNS (App Settings).
+            .dns(AppDns { prefs.dnsMode })
+            .build()
+    }
+
+    /**
+     * Same connection pool as [http], but with a descriptive User-Agent: some logo hosts
+     * (Wikimedia) answer 403 to clients that don't identify themselves, leaving logos blank.
+     */
+    val imageHttp: OkHttpClient by lazy {
+        val version = app.packageManager.getPackageInfo(app.packageName, 0).versionName
+        val agent = "WorldTV/$version (Android TV; https://github.com/sardine-mehico/iptv-player)"
+        http.newBuilder()
+            .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().header("User-Agent", agent).build()) }
             .build()
     }
 
@@ -109,6 +124,11 @@ class Prefs(private val sp: SharedPreferences) {
     fun appSlot(index: Int): String? = sp.getString("app_slot_$index", null)
 
     fun setAppSlot(index: Int, pkg: String?) = sp.edit().putString("app_slot_$index", pkg).apply()
+
+    /** AppDns.MODE_*: which DNS the app's own connections use. */
+    var dnsMode: Int
+        get() = sp.getInt("dns_mode", AppDns.MODE_SYSTEM)
+        set(v) = sp.edit().putInt("dns_mode", v).apply()
 
     /** PlayerView resize mode (AspectRatioFrameLayout.RESIZE_MODE_*), 0 = fit. */
     var resizeMode: Int

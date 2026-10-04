@@ -42,3 +42,14 @@ app/src/main/java/io/github/sardinemehico/iptvplayer/
   data/source/XtreamParser.kt streaming parsers for player_api.php responses
   data/source/JsonPull.kt    tiny lenient streaming JSON reader
 ```
+
+## License
+
+WorldTV is free software: you can redistribute it and/or modify it under the terms of the
+**GNU General Public License v3.0** (see [LICENSE](LICENSE)).
+
+It bundles the [Jellyfin Media3 FFmpeg decoder](https://github.com/jellyfin/jellyfin-androidx-media)
+(GPL-3.0), built on [FFmpeg](https://ffmpeg.org), for audio formats many TV boxes cannot decode
+(Dolby AC-3/E-AC-3, MP2, DTS, TrueHD). Other libraries (AndroidX Media3, OkHttp, Coil, Kotlin
+coroutines) are Apache-2.0.
+

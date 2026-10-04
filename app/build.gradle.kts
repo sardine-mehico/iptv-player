@@ -13,10 +13,12 @@ android {
         applicationId = "io.github.sardinemehico.iptvplayer"
         minSdk = 24
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.1.6"
+        versionCode = 8
+        versionName = "0.1.7"
         // English only for now; keeps unused library translations out of the APK.
         resourceConfigurations += listOf("en")
+        // TV boxes are ARM. Keeps the FFmpeg audio decoder to two ~1.4 MB native libraries.
+        ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
 
     signingConfigs {
@@ -73,10 +75,12 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.coroutines.android)
     implementation(libs.okhttp)
+    implementation(libs.okhttp.dnsoverhttps)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.datasource.okhttp)
     implementation(libs.media3.ui)
+    implementation(libs.media3.ffmpeg.decoder)
     implementation(libs.coil)
     implementation(libs.coil.network.okhttp)
 

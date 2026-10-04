@@ -80,31 +80,10 @@
             android:layout_marginStart="20dp"
             android:drawableTop="@drawable/ic_series"
             android:text="@string/series" />
-
-        <!-- Smaller column: Settings and Reload playlist, together as tall as one big tile. -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="180dp"
-            android:layout_marginStart="20dp"
-            android:layout_weight="0.8"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/tile_settings"
-                style="@style/HomeSmallTile"
-                android:drawableStart="@drawable/ic_settings_small"
-                android:text="@string/settings" />
-
-            <TextView
-                android:id="@+id/tile_reload"
-                style="@style/HomeSmallTile"
-                android:layout_marginTop="12dp"
-                android:drawableStart="@drawable/ic_refresh"
-                android:text="@string/reload_playlist" />
-        </LinearLayout>
     </LinearLayout>
 
-    <!-- Five app slots the user fills, like Android TV's favourite apps row. -->
+    <!-- Second row: four app slots the user fills (like Android TV's favourite apps), then
+         Reload playlist, App Settings and Android Settings. All the same size. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -115,39 +94,55 @@
             android:id="@+id/app_slot_0"
             layout="@layout/row_app_slot"
             android:layout_width="0dp"
-            android:layout_height="96dp"
+            android:layout_height="104dp"
             android:layout_weight="1" />
 
         <include
             android:id="@+id/app_slot_1"
             layout="@layout/row_app_slot"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="14dp"
             android:layout_width="0dp"
-            android:layout_height="96dp"
+            android:layout_height="104dp"
             android:layout_weight="1" />
 
         <include
             android:id="@+id/app_slot_2"
             layout="@layout/row_app_slot"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="14dp"
             android:layout_width="0dp"
-            android:layout_height="96dp"
+            android:layout_height="104dp"
             android:layout_weight="1" />
 
         <include
             android:id="@+id/app_slot_3"
             layout="@layout/row_app_slot"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="14dp"
             android:layout_width="0dp"
-            android:layout_height="96dp"
+            android:layout_height="104dp"
             android:layout_weight="1" />
 
         <include
-            android:id="@+id/app_slot_4"
+            android:id="@+id/tile_reload"
             layout="@layout/row_app_slot"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="14dp"
             android:layout_width="0dp"
-            android:layout_height="96dp"
+            android:layout_height="104dp"
+            android:layout_weight="1" />
+
+        <include
+            android:id="@+id/tile_settings"
+            layout="@layout/row_app_slot"
+            android:layout_marginStart="14dp"
+            android:layout_width="0dp"
+            android:layout_height="104dp"
+            android:layout_weight="1" />
+
+        <include
+            android:id="@+id/tile_android_settings"
+            layout="@layout/row_app_slot"
+            android:layout_marginStart="14dp"
+            android:layout_width="0dp"
+            android:layout_height="104dp"
             android:layout_weight="1" />
     </LinearLayout>
     </LinearLayout>

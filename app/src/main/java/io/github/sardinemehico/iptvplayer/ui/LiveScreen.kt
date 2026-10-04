@@ -90,6 +90,10 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
             osdStatus.text = text
             osdStatus.visibility = if (fullscreen && text.isNotEmpty()) View.VISIBLE else View.GONE
         }
+
+        override fun onAudioUnsupported() {
+            activity.toast(activity.getString(R.string.audio_unsupported))
+        }
     }
 
     init {
@@ -109,6 +113,7 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
         root.findViewById<View>(R.id.ctl_subs).setOnClickListener { chooseTrack(C.TRACK_TYPE_TEXT) }
         ctlAspect.setOnClickListener { cycleAspect() }
         ctlFav.setOnClickListener { playingRow?.let { toggleFavourite(playingIndex, it) } }
+        root.findViewById<View>(R.id.ctl_external).setOnClickListener { openExternal() }
         updateAspectLabel()
 
         // Keep the preview 16:9 and put the video exactly under it whenever layout changes.
@@ -425,6 +430,12 @@ class LiveScreen(activity: MainActivity) : Screen(activity) {
 
     private fun updateFavLabel() {
         ctlFav.setText(if (playingRow?.favourite == true) R.string.ctl_fav_remove else R.string.ctl_fav_add)
+    }
+
+    private fun openExternal() {
+        val row = playingRow ?: return
+        val url = row.streamUrl ?: urls?.live(row.itemId, liveExt) ?: return
+        PlayerUi.openExternal(activity, url, row.name)
     }
 
     private fun cycleAspect() {

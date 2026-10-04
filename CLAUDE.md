@@ -4,16 +4,21 @@ WorldTV: IPTV player for low-spec Android TV boxes, modelled on IBO Player Pro.
 MVP document: https://claude.ai/code/artifact/f7b3b895-aef4-4a3d-9555-9848fd1bd09e
 
 ## Product rules
-- **IBO parity:** if IBO Player Pro doesn't have a feature, don't build it. Exceptions: auto-start on boot, and an
-  optional 6-digit PIN per playlist that guards its details (URL, username, password) and deletion. That PIN is
-  not a parental lock: it never gates watching.
+- **IBO parity:** if IBO Player Pro doesn't have a feature, don't build it. Exceptions the owner asked for:
+  auto-start on boot; an optional 6-digit PIN per playlist that guards its details (URL, username,
+  password) and deletion (not a parental lock: it never gates watching); launcher mode (HOME) with five
+  user-chosen app slots, All apps and Android settings; Reload playlist on the home screen.
 - **Not built:** cloud/website playlist management, activation/licensing, parental PIN, hidden categories,
   recent-channels list, multi-screen, recording, Stalker portals, PiP, USB playlist files, number-key zap.
 - No built-in content, playlists or provider links, ever.
 
 ## Hard limits
 - **Release APK < 15 MB** (CI fails at 15 MB; expect 5–8 MB). Check size impact before adding any dependency.
-- **No native code** (no FFmpeg, no libVLC). Unsupported streams go to an external player, as IBO does.
+- **Native code:** only the Jellyfin `media3-ffmpeg-decoder` (audio-only FFmpeg, GPL-3.0), used as a fallback
+  for audio the box can't decode (AC-3/E-AC-3/MP2/DTS). ARM ABIs only. No other native code (no libVLC,
+  no video FFmpeg). Anything still unplayable goes to an external player ("Open in…"), as IBO does.
+- **License:** GPL-3.0 (required by the FFmpeg decoder). Keep LICENSE, the README section and the
+  in-app notice in App Settings.
 - minSdk 24, targetSdk 36. English only (`resourceConfigurations = en`) until translations exist.
 
 ## Performance rules (target: 1 GB RAM, Cortex-A53, Mali-400/450)

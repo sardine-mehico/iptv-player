@@ -1,9 +1,12 @@
 package io.github.sardinemehico.iptvplayer
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Rect
 import android.os.Bundle
 import android.view.KeyEvent
+import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
@@ -32,6 +35,18 @@ class MainActivity : ComponentActivity() {
         private set
     private lateinit var screens: FrameLayout
     private val stack = ArrayList<Screen>()
+
+    /**
+     * Draws text at the designed size whatever the box's "Font size" setting is. The TV layouts
+     * are fixed-size (rows, tiles, buttons); some boxes ship with a 115% font scale, which made
+     * every screen look zoomed in and could clip labels.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        val config = newBase.resources.configuration
+        if (config.fontScale == 1f) return super.attachBaseContext(newBase)
+        val fixed = Configuration(config).apply { fontScale = 1f }
+        super.attachBaseContext(newBase.createConfigurationContext(fixed))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,8 +127,21 @@ class MainActivity : ComponentActivity() {
         push(screen)
     }
 
-    /** Positions the video. null = full screen. */
+    /**
+     * Takes the video surface off screen while no screen shows video.
+     *
+     * It used to be shrunk to 1x1 px instead (to keep the surface alive). Some TV-box display
+     * hardware (seen on an Allwinner H618 "8K618-T", Android 12) mis-composes such a tiny layer
+     * and sends only the window background to HDMI: a plain maroon screen, while screenshots
+     * (composed differently) look fine.
+     */
+    fun hideVideo() {
+        if (playerView.visibility != View.GONE) playerView.visibility = View.GONE
+    }
+
+    /** Positions the video and shows it. null = full screen. */
     fun setVideoRect(rect: Rect?) {
+        if (playerView.visibility != View.VISIBLE) playerView.visibility = View.VISIBLE
         val lp = playerView.layoutParams as FrameLayout.LayoutParams
         if (rect == null) {
             lp.width = ViewGroup.LayoutParams.MATCH_PARENT

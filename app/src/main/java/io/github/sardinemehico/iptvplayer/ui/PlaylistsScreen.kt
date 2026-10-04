@@ -6,7 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.graphics.Rect
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -14,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.sardinemehico.iptvplayer.MainActivity
 import io.github.sardinemehico.iptvplayer.R
+import io.github.sardinemehico.iptvplayer.data.net.AppDns
 import io.github.sardinemehico.iptvplayer.data.repo.Pin
 import io.github.sardinemehico.iptvplayer.data.repo.Playlist
 import kotlinx.coroutines.CancellationException
@@ -35,19 +35,26 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
     init {
         add.setOnClickListener { activity.push(AddPlaylistScreen(activity)) }
         autoStart.setOnClickListener { toggleAutoStart() }
+        val dns = root.findViewById<TextView>(R.id.dns)
+        fun showDns() = dns.setText(
+            when (graph.prefs.dnsMode) {
+                AppDns.MODE_CLOUDFLARE -> R.string.dns_cloudflare
+                AppDns.MODE_GOOGLE -> R.string.dns_google
+                else -> R.string.dns_system
+            },
+        )
+        dns.setOnClickListener {
+            graph.prefs.dnsMode = (graph.prefs.dnsMode + 1) % 3
+            showDns()
+        }
+        showDns()
         root.findViewById<View>(R.id.all_apps).setOnClickListener {
             scope.launch {
                 val apps = withContext(graph.io) { Apps.list(activity) }
                 Apps.pick(activity, R.string.all_apps, apps) { Apps.launch(activity, it.pkg) }
             }
         }
-        root.findViewById<View>(R.id.android_settings).setOnClickListener {
-            try {
-                activity.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            } catch (e: ActivityNotFoundException) {
-                activity.toast(activity.getString(R.string.app_missing))
-            }
-        }
+        root.findViewById<View>(R.id.android_settings).setOnClickListener { Apps.openAndroidSettings(activity) }
         updateAutoStart()
     }
 
@@ -94,7 +101,7 @@ class PlaylistsScreen(activity: MainActivity) : Screen(activity) {
     }
 
     override fun onShown() {
-        activity.setVideoRect(Rect(0, 0, 1, 1))
+        activity.hideVideo()
         updateAutoStart() // the permission may have been granted in system settings meanwhile
         graph.player.stop()
         reload()

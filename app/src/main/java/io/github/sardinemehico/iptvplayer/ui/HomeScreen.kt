@@ -1,7 +1,6 @@
 package io.github.sardinemehico.iptvplayer.ui
 
 import android.app.AlertDialog
-import android.graphics.Rect
 import android.view.KeyEvent
 import android.view.View
 import android.widget.ImageView
@@ -16,15 +15,15 @@ import java.text.DateFormat
 import java.util.Date
 
 /**
- * Live TV · Movies · Series, smaller App Settings and Reload playlist buttons, and five app
- * slots the user fills (WorldTV can be the box's launcher).
+ * Live TV · Movies · Series on top; below, four app slots the user fills (WorldTV can be the
+ * box's launcher), then Reload playlist, App Settings and Android Settings.
  */
 class HomeScreen(activity: MainActivity) : Screen(activity) {
 
     override val root: View = inflater.inflate(R.layout.screen_home, null)
     private val account: TextView = root.findViewById(R.id.account)
     private val live: View = root.findViewById(R.id.tile_live)
-    private val reload: TextView = root.findViewById(R.id.tile_reload)
+    private val reload: View = root.findViewById(R.id.tile_reload)
     private val busy: View = root.findViewById(R.id.busy)
     private val reloadStatus: TextView = root.findViewById(R.id.reload_status)
     private var reloading = false
@@ -36,6 +35,11 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
         root.findViewById<View>(R.id.tile_series).setOnClickListener { withPlaylist { activity.push(VodScreen(activity, ContentType.SERIES)) } }
         // Settings holds the playlist list (add, refresh, details, delete).
         root.findViewById<View>(R.id.tile_settings).setOnClickListener { activity.push(PlaylistsScreen(activity)) }
+        root.findViewById<View>(R.id.tile_android_settings).setOnClickListener { Apps.openAndroidSettings(activity) }
+        // The three fixed buttons share the app-slot layout so the row is even.
+        fixedTile(R.id.tile_reload, R.drawable.ic_refresh, R.string.reload_playlist)
+        fixedTile(R.id.tile_settings, R.drawable.ic_settings_small, R.string.settings)
+        fixedTile(R.id.tile_android_settings, R.drawable.ic_android_settings, R.string.android_settings_short)
         reload.setOnClickListener { reloadPlaylist() }
         slots.forEachIndexed { i, v ->
             v.setOnClickListener { onSlotClicked(i) }
@@ -49,7 +53,7 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
     }
 
     override fun onShown() {
-        activity.setVideoRect(Rect(0, 0, 1, 1))
+        activity.hideVideo()
         graph.player.stop()
         live.requestFocus()
         scope.launch { showAccount() }
@@ -66,6 +70,16 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
                 else -> open()
             }
         }
+    }
+
+    private fun fixedTile(id: Int, icon: Int, label: Int) {
+        val v = root.findViewById<View>(id)
+        v.findViewById<ImageView>(R.id.app_icon).apply {
+            setImageResource(icon)
+            imageTintList = activity.getColorStateList(R.color.text_primary)
+        }
+        v.findViewById<TextView>(R.id.app_label).setText(label)
+        v.contentDescription = activity.getString(label)
     }
 
     // ---- app slots ----
@@ -175,7 +189,7 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
     }
 
     private companion object {
-        const val SLOTS = 5
-        val SLOT_IDS = intArrayOf(R.id.app_slot_0, R.id.app_slot_1, R.id.app_slot_2, R.id.app_slot_3, R.id.app_slot_4)
+        const val SLOTS = 4
+        val SLOT_IDS = intArrayOf(R.id.app_slot_0, R.id.app_slot_1, R.id.app_slot_2, R.id.app_slot_3)
     }
 }

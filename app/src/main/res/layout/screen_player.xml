@@ -93,6 +93,7 @@
             <TextView android:id="@+id/ctl_audio" style="@style/ControlButton" android:text="@string/ctl_audio" />
             <TextView android:id="@+id/ctl_subs" style="@style/ControlButton" android:text="@string/ctl_subs" />
             <TextView android:id="@+id/ctl_aspect" style="@style/ControlButton" android:text="@string/ctl_aspect_fit" />
+            <TextView android:id="@+id/ctl_external" style="@style/ControlButton" android:text="@string/ctl_external" />
         </LinearLayout>
         </HorizontalScrollView>
     </LinearLayout>

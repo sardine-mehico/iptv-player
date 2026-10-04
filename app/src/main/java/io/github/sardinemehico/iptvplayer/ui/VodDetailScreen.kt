@@ -1,6 +1,5 @@
 package io.github.sardinemehico.iptvplayer.ui
 
-import android.graphics.Rect
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -87,7 +86,7 @@ class VodDetailScreen(
     }
 
     override fun onShown() {
-        activity.setVideoRect(Rect(0, 0, 1, 1))
+        activity.hideVideo()
         graph.player.stop()
         if (!loaded) {
             loaded = true

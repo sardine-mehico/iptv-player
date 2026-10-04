@@ -63,6 +63,15 @@ object Apps {
         }
     }
 
+    /** The box's own Settings app. */
+    fun openAndroidSettings(activity: MainActivity) {
+        try {
+            activity.startActivity(Intent(android.provider.Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: ActivityNotFoundException) {
+            activity.toast(activity.getString(R.string.app_missing))
+        }
+    }
+
     /** A list dialog of [apps] with their icons; [onPick] gets the chosen one. */
     fun pick(activity: MainActivity, title: Int, apps: List<LaunchableApp>, onPick: (LaunchableApp) -> Unit) {
         val size = (32 * activity.resources.displayMetrics.density).toInt()

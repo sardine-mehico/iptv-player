@@ -40,7 +40,7 @@ class AddPlaylistScreen(activity: MainActivity, private val firstRun: Boolean = 
     }
 
     override fun onShown() {
-        activity.setVideoRect(android.graphics.Rect(0, 0, 1, 1))
+        activity.hideVideo()
         if (!busy) modeXtream.requestFocus()
     }
 

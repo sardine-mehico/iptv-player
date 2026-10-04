@@ -1,6 +1,9 @@
 package io.github.sardinemehico.iptvplayer.ui
 
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
@@ -65,6 +68,22 @@ object PlayerUi {
             }
             .setOnDismissListener { onDone() }
             .show()
+    }
+
+    /**
+     * Hands the stream to another installed player (VLC, MX Player...), as IBO does for streams
+     * it can't play. Our player is stopped first so the provider sees one connection.
+     */
+    fun openExternal(activity: MainActivity, url: String, title: String) {
+        App.graph.player.stop()
+        val view = Intent(Intent.ACTION_VIEW)
+            .setDataAndType(Uri.parse(url), "video/*")
+            .putExtra("title", title)
+        try {
+            activity.startActivity(Intent.createChooser(view, activity.getString(R.string.open_with)))
+        } catch (e: ActivityNotFoundException) {
+            activity.toast(activity.getString(R.string.no_external_player))
+        }
     }
 
     /** 1:05:09 or 5:09. */

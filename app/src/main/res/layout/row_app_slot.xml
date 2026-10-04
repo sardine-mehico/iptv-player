@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One home-screen app slot: the app's TV banner, or its icon and name, or "+ Add app". -->
+<!-- One home-screen slot: an app's TV banner, or its icon and name, "+ Add app", or a fixed
+     button (Reload playlist, App Settings, Settings). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="0dp"
     android:layout_height="96dp"
@@ -25,7 +26,7 @@
         android:layout_marginTop="4dp"
         android:ellipsize="end"
         android:gravity="center"
-        android:maxLines="1"
+        android:maxLines="2"
         android:textColor="@color/text_primary"
         android:textSize="14sp" />
 </LinearLayout>

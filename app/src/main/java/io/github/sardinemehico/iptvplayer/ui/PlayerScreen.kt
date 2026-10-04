@@ -86,6 +86,10 @@ class PlayerScreen(
                 if (index < items.lastIndex) step(+1) else activity.pop()
             }
         }
+
+        override fun onAudioUnsupported() {
+            activity.toast(activity.getString(R.string.audio_unsupported))
+        }
     }
 
     init {
@@ -105,6 +109,11 @@ class PlayerScreen(
             scheduleHide()
         }
         ctlAspect.setText(PlayerUi.aspectLabel(activity))
+        root.findViewById<View>(R.id.ctl_external).setOnClickListener {
+            val item = items[index]
+            resumeAt = graph.player.positionMs
+            PlayerUi.openExternal(activity, item.url, item.title)
+        }
     }
 
     override fun onShown() {
