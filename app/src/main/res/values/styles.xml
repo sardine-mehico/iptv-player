@@ -52,16 +52,17 @@
         <item name="android:textSize">16sp</item>
     </style>
 
-    <!-- Home menu tile: icon above label, one flat view. -->
+    <!-- Home menu tile (Live TV, Movies, Series): the main thing on screen. Icon above label, one flat view. -->
     <style name="HomeTile" parent="TileButton">
         <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">180dp</item>
+        <item name="android:layout_height">250dp</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:drawablePadding">14dp</item>
+        <item name="android:drawablePadding">18dp</item>
         <item name="android:drawableTint">@color/text_primary</item>
-        <item name="android:paddingTop">28dp</item>
+        <item name="android:paddingTop">44dp</item>
         <item name="android:gravity">center_horizontal</item>
-        <item name="android:textSize">22sp</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">bold</item>
     </style>
 
     <!-- Search field at the top of a category list. -->

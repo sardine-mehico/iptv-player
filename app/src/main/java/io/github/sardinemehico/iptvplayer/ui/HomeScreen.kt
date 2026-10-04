@@ -15,8 +15,8 @@ import java.text.DateFormat
 import java.util.Date
 
 /**
- * Live TV · Movies · Series on top; below, four app slots the user fills (WorldTV can be the
- * box's launcher), then Reload playlist, App Settings and Android Settings.
+ * Live TV · Movies · Series on top; below, five app slots the user fills (WorldTV can be the
+ * box's launcher), then Reload playlist, App Settings, All apps and Android Settings.
  */
 class HomeScreen(activity: MainActivity) : Screen(activity) {
 
@@ -36,9 +36,11 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
         // Settings holds the playlist list (add, refresh, details, delete).
         root.findViewById<View>(R.id.tile_settings).setOnClickListener { activity.push(PlaylistsScreen(activity)) }
         root.findViewById<View>(R.id.tile_android_settings).setOnClickListener { Apps.openAndroidSettings(activity) }
+        root.findViewById<View>(R.id.tile_all_apps).setOnClickListener { showAllApps() }
         // The three fixed buttons share the app-slot layout so the row is even.
         fixedTile(R.id.tile_reload, R.drawable.ic_refresh, R.string.reload_playlist)
         fixedTile(R.id.tile_settings, R.drawable.ic_settings_small, R.string.settings)
+        fixedTile(R.id.tile_all_apps, R.drawable.ic_all_apps, R.string.all_apps)
         fixedTile(R.id.tile_android_settings, R.drawable.ic_android_settings, R.string.android_settings_short)
         reload.setOnClickListener { reloadPlaylist() }
         slots.forEachIndexed { i, v ->
@@ -76,7 +78,7 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
         val v = root.findViewById<View>(id)
         v.findViewById<ImageView>(R.id.app_icon).apply {
             setImageResource(icon)
-            imageTintList = activity.getColorStateList(R.color.text_primary)
+            imageTintList = activity.getColorStateList(R.color.slot_content)
         }
         v.findViewById<TextView>(R.id.app_label).setText(label)
         v.contentDescription = activity.getString(label)
@@ -97,7 +99,7 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
             when {
                 app == null -> {
                     icon.setImageResource(R.drawable.ic_add)
-                    icon.imageTintList = activity.getColorStateList(R.color.text_secondary)
+                    icon.imageTintList = activity.getColorStateList(R.color.slot_content)
                     label.setText(R.string.add_app)
                     label.visibility = View.VISIBLE
                 }
@@ -136,6 +138,14 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
                 }
             }
             .show()
+    }
+
+    /** Every installed app; OK opens it. */
+    private fun showAllApps() {
+        scope.launch {
+            val apps = withContext(graph.io) { Apps.list(activity) }
+            Apps.pick(activity, R.string.all_apps, apps) { Apps.launch(activity, it.pkg) }
+        }
     }
 
     private fun chooseApp(i: Int) {
@@ -189,7 +199,7 @@ class HomeScreen(activity: MainActivity) : Screen(activity) {
     }
 
     private companion object {
-        const val SLOTS = 4
-        val SLOT_IDS = intArrayOf(R.id.app_slot_0, R.id.app_slot_1, R.id.app_slot_2, R.id.app_slot_3)
+        const val SLOTS = 5
+        val SLOT_IDS = intArrayOf(R.id.app_slot_0, R.id.app_slot_1, R.id.app_slot_2, R.id.app_slot_3, R.id.app_slot_4)
     }
 }

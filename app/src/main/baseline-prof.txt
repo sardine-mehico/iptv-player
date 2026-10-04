@@ -1,0 +1,29 @@
+# Baseline profile: code ART compiles ahead of time instead of interpreting/JIT-ing it on the
+# first launches. Covers start-up, the screens, list scrolling and starting playback.
+# Wildcard rules (packaged by AGP; installed on sideloaded boxes by androidx.profileinstaller).
+
+# WorldTV itself.
+HSPLio/github/sardinemehico/iptvplayer/**->**(**)**
+Lio/github/sardinemehico/iptvplayer/**;
+
+# Lists and focus (every screen, every scroll).
+HSPLandroidx/recyclerview/widget/**->**(**)**
+Landroidx/recyclerview/widget/**;
+
+# Coroutines used by every screen and database call.
+HSPLkotlinx/coroutines/**->**(**)**
+Lkotlinx/coroutines/**;
+
+# Logo loading.
+HSPLcoil3/**->**(**)**
+Lcoil3/**;
+
+# Starting and zapping streams.
+HSPLandroidx/media3/exoplayer/**->**(**)**
+Landroidx/media3/exoplayer/**;
+HSPLandroidx/media3/extractor/ts/**->**(**)**
+Landroidx/media3/extractor/ts/**;
+HSPLandroidx/media3/datasource/**->**(**)**
+Landroidx/media3/datasource/**;
+HSPLokhttp3/**->**(**)**
+Lokhttp3/**;

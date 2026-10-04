@@ -46,7 +46,6 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="30.77"
-            android:background="@color/background"
             android:orientation="vertical"
             android:paddingStart="6dp"
             android:paddingTop="20dp"

@@ -73,13 +73,15 @@ class AppGraph(private val app: Application) {
     }
 
     /**
-     * Same connection pool as [http], but with a descriptive User-Agent: some logo hosts
-     * (Wikimedia) answer 403 to clients that don't identify themselves, leaving logos blank.
+     * Same connection pool as [http], but with a descriptive User-Agent (some logo hosts, e.g.
+     * Wikimedia, answer 403 to clients that don't identify themselves) and at most 4 logo
+     * downloads at a time (2 per host), so scrolling never competes hard with a starting stream.
      */
     val imageHttp: OkHttpClient by lazy {
         val version = app.packageManager.getPackageInfo(app.packageName, 0).versionName
         val agent = "WorldTV/$version (Android TV; https://github.com/sardine-mehico/iptv-player)"
         http.newBuilder()
+            .dispatcher(okhttp3.Dispatcher().apply { maxRequests = 4; maxRequestsPerHost = 2 })
             .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().header("User-Agent", agent).build()) }
             .build()
     }

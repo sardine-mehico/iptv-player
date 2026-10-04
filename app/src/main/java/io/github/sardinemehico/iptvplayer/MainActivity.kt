@@ -5,6 +5,10 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Rect
 import android.os.Bundle
+import android.os.Process
+import android.os.SystemClock
+import android.util.Log
+import android.view.ViewTreeObserver
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -52,6 +56,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        // The root layout paints the background; the window's copy would be painted under it
+        // on every frame for nothing.
+        window.setBackgroundDrawable(null)
         playerView = findViewById(R.id.player)
         screens = findViewById(R.id.screens)
         App.graph.player.attach(playerView)
@@ -67,6 +74,7 @@ class MainActivity : ComponentActivity() {
         })
 
         lifecycleScope.launch { route() }
+        logStartup()
     }
 
     /** First screen: add a playlist, pick one, or go straight home. */
@@ -97,6 +105,21 @@ class MainActivity : ComponentActivity() {
     fun launchForResult(intent: Intent, done: (Int) -> Unit) {
         resultCallback = done
         resultLauncher.launch(intent)
+    }
+
+    /** Logs process start -> first drawn screen, and tells Android the app is fully drawn. */
+    private fun logStartup() {
+        val root = findViewById<View>(R.id.screens)
+        root.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                if (stack.isEmpty()) return true // wait for the first screen
+                root.viewTreeObserver.removeOnPreDrawListener(this)
+                val ms = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
+                Log.i("WorldTV.Startup", "first screen drawn ${ms}ms after process start")
+                reportFullyDrawn()
+                return true
+            }
+        })
     }
 
     /** True when the box opened us as its launcher (Home), not from the app list. */

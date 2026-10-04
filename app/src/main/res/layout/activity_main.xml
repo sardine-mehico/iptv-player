@@ -5,6 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background">
+    <!-- The app's only full-screen background. Screens are transparent over it (no overdraw on
+         Mali GPUs); the theme's window background is dropped once this is laid out. -->
 
     <!-- The only video surface in the app. Moved and resized; gone while no screen shows video
          (see MainActivity.hideVideo). Starts gone: the first screen is the menu. -->

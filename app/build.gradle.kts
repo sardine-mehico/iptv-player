@@ -13,8 +13,8 @@ android {
         applicationId = "io.github.sardinemehico.iptvplayer"
         minSdk = 24
         targetSdk = 36
-        versionCode = 12
-        versionName = "0.1.11"
+        versionCode = 13
+        versionName = "0.1.12"
         // English only for now; keeps unused library translations out of the APK.
         resourceConfigurations += listOf("en")
         // TV boxes are ARM. Keeps the FFmpeg audio decoder to two ~1.4 MB native libraries.
@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.media3.ffmpeg.decoder)
     implementation(libs.coil)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.profileinstaller)
 
     testImplementation(libs.junit)
 }
